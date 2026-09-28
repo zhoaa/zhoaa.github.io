@@ -1,0 +1,30 @@
+<html>  
+<head>   
+<title> Random Image Generator </title>  
+</head>  
+<body onload="getRandomImage()"> 
+<script>  
+
+function getRandomImage() {  
+//declare an array to store the images  
+var randomImage = new Array();  
+  
+//insert the URL of images in array  
+randomImage[0] = "https://media.discordapp.net/attachments/1075170251668467842/1090362645309292604/Strandley_6.png?width=1740&height=1088";  
+randomImage[1] = "https://media.discordapp.net/attachments/1075170251668467842/1090362645611302993/Strandley_5.png?width=1740&height=1088";  
+randomImage[2] = "https://media.discordapp.net/attachments/1075170251668467842/1090362645812621474/Strandley_4.png?width=1740&height=1088";  
+randomImage[3] = "https://media.discordapp.net/attachments/1075170251668467842/1090362646064267375/Strandley_3.png?width=1740&height=1088";  
+randomImage[4] = "https://media.discordapp.net/attachments/1075170251668467842/1090362646257225909/Strandley_2.png?width=1740&height=1088";  
+randomImage[5] = "https://media.discordapp.net/attachments/1075170251668467842/1090362646462738433/Strandley_1.png?width=1740&height=1088";  
+randomImage[6] = "https://media.discordapp.net/attachments/1075170251668467842/1090362646634692628/Strandley.png?width=1740&height=1088";  
+
+  
+//generate a number and provide to the image to generate randomly  
+var number = Math.floor(Math.random()*randomImage.length);  
+var randURL = randomImage[number];
+window.location.href = randURL;
+}  
+
+</script>  
+</body>    
+</html>  

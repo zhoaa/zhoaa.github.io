@@ -1,0 +1,140 @@
+  html, body {
+    background: #93d3d1;
+    font-family: Helvetica;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+   
+  }
+
+  #overlay {
+    position: fixed; /* Sit on top of the page content */
+    display: none; /* Hidden by default */
+    width: 100%; /* Full width (cover the whole page) */
+    height: 100%; /* Full height (cover the whole page) */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.5;
+    background-color: rgb(255, 0, 0); /* Red background */
+    z-index: 12;
+    overflow: hidden;
+
+  }
+
+
+  #banner-message {
+    background: #fff;
+    transition: all 0.2s;
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  
+  .pimg {
+    top: -1000;
+    display: none;
+    width: 16%;
+    height: 24%;
+    position: absolute;
+    /*animation-name: move-horizontal;*/
+    animation-duration: 5s;
+    animation-delay: 0s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor:crosshair;
+  }
+
+  #hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  #profile {
+    z-index: 10;
+    /* text-align: center; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    column-gap: 10px;
+    flex-wrap: wrap;
+    /* height: 150px; */
+  }
+  
+  h1 {
+    cursor:pointer;
+    transition: all 0.2s ease-in-out;
+    font-family: 'Cabin', sans-serif;
+    font-size: 4.5em;
+    margin: 0;
+  }
+
+  .glow:hover {
+    color: rgba(255, 255, 255, 1);
+  }
+
+  .cloud {
+    height: 100%;
+    width: auto;
+    position: absolute;
+    opacity: 0.9;
+    /*filter: invert(42%) sepia(93%) saturate(1352%) hue-rotate(87deg) brightness(119%) contrast(119%);*/
+
+  }
+
+  a {
+    color: #000000;
+    text-decoration: none;
+    padding: 4px;
+  }
+
+  /* .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+
+    position: absolute;
+    z-index: 1;
+    top: 100%;
+    left: 50%;
+    margin-left: -60px;
+  }
+  
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+  } 
+  this stuff doesn't work for now*/
+
+  @keyframes move-horizontal {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(1600%);
+    }
+  }
+
+  @keyframes fall {
+    from {
+      transform: translateY(0%);
+    }
+    to {
+      transform: translateY(1600%);
+    }
+  }
+
