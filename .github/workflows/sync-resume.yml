@@ -1,0 +1,59 @@
+name: Sync Overleaf resume
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: sync-overleaf-resume
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser and PDF tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/resume-tools" playwright@1.56.1
+          "$RUNNER_TEMP/resume-tools/node_modules/.bin/playwright" install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+      - name: Download from read-only Overleaf project
+        env:
+          OVERLEAF_READ_URL: ${{ secrets.OVERLEAF_READ_URL }}
+          NODE_PATH: ${{ runner.temp }}/resume-tools/node_modules
+          RESUME_OUTPUT: ${{ runner.temp }}/resume.pdf
+        run: node scripts/sync-overleaf-resume.cjs
+      - name: Validate and update only changed content
+        id: update
+        env:
+          PDF: ${{ runner.temp }}/resume.pdf
+        run: |
+          pdfinfo "$PDF" >/dev/null
+          pdftotext -layout "$PDF" "$RUNNER_TEMP/new.txt"
+          test -s "$RUNNER_TEMP/new.txt"
+          mkdir -p "$RUNNER_TEMP/resume-new" "$RUNNER_TEMP/resume-old"
+          pdftoppm -r 96 -png "$PDF" "$RUNNER_TEMP/resume-new/page"
+          pdftoppm -r 96 -png assets/resume.pdf "$RUNNER_TEMP/resume-old/page"
+          if diff -qr "$RUNNER_TEMP/resume-new" "$RUNNER_TEMP/resume-old" >/dev/null; then
+            echo 'No résumé visual changes.'
+            exit 0
+          fi
+          cp "$PDF" assets/resume.pdf
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/resume.pdf
+          git commit -m 'Update resume from Overleaf'
+          git push
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - name: Request GitHub Pages rebuild
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
