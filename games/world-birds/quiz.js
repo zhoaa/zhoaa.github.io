@@ -9,6 +9,68 @@ const birdGroups = {
   "Fish": [],
 };
 
+function createFilter(label, allLabel, entries, onChange) {
+  const details = document.createElement("details");
+  details.className = "filter";
+  details.setAttribute("name", "quiz-filters");
+  const summary = document.createElement("summary");
+  summary.textContent = `${label}: ${allLabel}`;
+  const panel = document.createElement("div");
+  panel.className = "filter-panel";
+  const search = document.createElement("input");
+  search.type = "search";
+  search.placeholder = `Search ${label.toLowerCase()}`;
+  search.setAttribute("aria-label", search.placeholder);
+  const results = document.createElement("div");
+  results.className = "filter-options";
+  panel.append(search, results);
+  details.append(summary, panel);
+  byId("filters").append(details);
+
+  let selected = "";
+  function showOptions() {
+    const query = normalize(search.value);
+    results.replaceChildren();
+    for (const [value, title] of [["", allLabel], ...entries]) {
+      if (!normalize(title).includes(query)) continue;
+      const option = document.createElement("button");
+      option.type = "button";
+      option.textContent = title;
+      option.setAttribute("aria-pressed", String(selected === value));
+      option.addEventListener("click", () => {
+        selected = value;
+        summary.textContent = `${label}: ${title}`;
+        details.open = false;
+        summary.focus();
+        onChange();
+      });
+      results.append(option);
+    }
+    if (!results.childElementCount) results.textContent = "No matching options.";
+  }
+
+  details.addEventListener("toggle", () => {
+    if (!details.open) return;
+    search.value = "";
+    showOptions();
+    search.focus();
+  });
+  search.addEventListener("input", showOptions);
+  details.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && details.open) {
+      details.open = false;
+      summary.focus();
+    } else if (event.target === search && event.key === "Enter" && !event.isComposing) {
+      event.preventDefault();
+      results.firstElementChild?.click();
+    }
+  });
+  details.addEventListener("focusout", (event) => {
+    if (event.relatedTarget && !details.contains(event.relatedTarget)) details.open = false;
+  });
+  return { get value() { return selected; } };
+}
+
 function loadQuiz(orders, extraAnswers, regions) {
   const species = orders.flatMap(([, , families]) => families.flatMap(([, , birds]) => birds));
   const ids = new Set(species.map(([id]) => id));
@@ -59,18 +121,16 @@ function loadQuiz(orders, extraAnswers, regions) {
   const form = byId("guess-form");
   const rows = new Map();
   const visible = new Set();
-  const orderFilter = byId("order-filter");
-  const regionFilter = byId("region-filter");
-  const groupFilter = byId("group-filter");
-  const regionSpecies = new Map();
-
-  for (const [code, label, members] of regions) {
-    regionFilter.add(new Option(label, code));
-    regionSpecies.set(code, new Set(members));
-  }
-  for (const label of Object.keys(birdGroups)) {
-    groupFilter.add(new Option(label, label));
-  }
+  const taxonOptions = (taxa) => taxa.map(([name, label]) => [
+    name, label && label !== name ? `${name} (${label})` : name,
+  ]);
+  const families = orders.flatMap(([, , orderFamilies]) => orderFamilies);
+  const familyOptions = taxonOptions(families).sort(([a], [b]) => a.localeCompare(b));
+  const regionSpecies = new Map(regions.map(([code, , members]) => [code, new Set(members)]));
+  const orderFilter = createFilter("Order", "All orders", taxonOptions(orders), applyFilters);
+  const familyFilter = createFilter("Family", "All families", familyOptions, applyFilters);
+  const regionFilter = createFilter("Region", "Worldwide", regions.map(([code, label]) => [code, label]), applyFilters);
+  const groupFilter = createFilter("Custom group", "All groups", Object.keys(birdGroups).map((label) => [label, label]), applyFilters);
 
   function updateScore() {
     let named = 0;
@@ -82,11 +142,13 @@ function loadQuiz(orders, extraAnswers, regions) {
 
   function applyFilters() {
     const selectedOrder = orderFilter.value;
+    const selectedFamily = familyFilter.value;
     const selectedRegion = regionSpecies.get(regionFilter.value);
     const selectedGroup = birdGroups[groupFilter.value];
     visible.clear();
     for (const [id, { row, order, family }] of rows) {
       row.hidden = (selectedOrder !== "" && order !== selectedOrder)
+        || (selectedFamily !== "" && family !== selectedFamily)
         || (selectedRegion !== undefined && !selectedRegion.has(id))
         || (selectedGroup?.length > 0 && !selectedGroup.includes(order) && !selectedGroup.includes(family));
       if (!row.hidden) visible.add(id);
@@ -102,8 +164,7 @@ function loadQuiz(orders, extraAnswers, regions) {
   }
 
   const checklist = document.createDocumentFragment();
-  for (const [order, label, families] of orders) {
-    orderFilter.add(new Option(label ? `${order} (${label})` : order, order));
+  for (const [order, , families] of orders) {
     for (const [family, , birds] of families) {
       for (const [id, english, scientific] of birds) {
         const row = document.createElement("tr");
@@ -177,9 +238,6 @@ function loadQuiz(orders, extraAnswers, regions) {
   hideTaxonomy.addEventListener("change", updateColumns);
   updateColumns();
 
-  for (const filter of [orderFilter, regionFilter, groupFilter]) {
-    filter.addEventListener("change", applyFilters);
-  }
   applyFilters();
   if (found.size === species.length) feedback.textContent = "You named every species!";
   byId("loading").hidden = true;

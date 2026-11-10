@@ -23,8 +23,27 @@ form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 input[type="text"], button { font: inherit; padding: .35rem .5rem; }
 input[type="text"] { flex: 0 1 19rem; min-width: 0; }
 .filters { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .5rem 0; }
-.filters label { max-width: 100%; font-size: .9rem; }
-.filters select { max-width: 100%; font: inherit; }
+.filter { position: relative; flex: 1 1 13rem; min-width: 0; font-size: .9rem; }
+.filter summary { cursor: pointer; border: 1px solid #aaa; padding: .25rem .45rem; }
+.filter-panel {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 0;
+  background: #fff;
+  border: 1px solid #aaa;
+  padding: .35rem;
+}
+.filter-panel input { box-sizing: border-box; width: 100%; font: inherit; padding: .25rem .35rem; }
+.filter-options { max-height: min(13rem, 32vh); overflow: auto; margin-top: .35rem; }
+.filter-options button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+}
+.filter-options button:hover, .filter-options button[aria-pressed="true"] { background: #ececec; }
 #score { white-space: nowrap; font-weight: 600; }
 #feedback { min-height: 1.45em; margin: .25rem 0 0; font-size: .9rem; }
 
