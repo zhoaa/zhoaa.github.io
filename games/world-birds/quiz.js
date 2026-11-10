@@ -186,12 +186,14 @@ function loadQuiz(orders, extraAnswers, regions) {
     // Require Enter for codes so a short code can't interrupt a name being typed.
     const codes = banding.get(key);
     if (codes && !submitted) return;
-    const matches = official.get(key) ?? (codes
-      ? new Set([...codes, ...(alternate.get(key) ?? [])])
-      : alternate.get(key));
-    if (matches?.size !== 1) {
+    const matches = new Set([
+      ...(official.get(key) ?? []),
+      ...(alternate.get(key) ?? []),
+      ...(codes ?? []),
+    ]);
+    if (matches.size !== 1) {
       if (submitted) {
-        feedback.textContent = matches ? "possibly multiple names" : "No match. Try another bird name or code.";
+        feedback.textContent = matches.size > 1 ? "There are multiple possible birds." : "No match. Try another bird name or code.";
         guess.select();
       }
       return;

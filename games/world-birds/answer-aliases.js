@@ -2273,7 +2273,7 @@ const birdAnswerAliases = [
   ["avibase-B63209E6",[],["MENPOR","PRWO"]],
   ["avibase-B6353CFD",["Kaka"],[]],
   ["avibase-B64C1B1D",[],["CALORN","CCLO"]],
-  ["avibase-B64C749B",["American Yellow Warbler (Northern)"],["YEWA"]],
+  ["avibase-B64C749B",["American Yellow Warbler (Northern)","Yellow Warbler"],["YEWA"]],
   ["avibase-B655AA73",[],["ELAFLA","YBEL"]],
   ["avibase-B656B15D",[],["AMMLEC","LCSP"]],
   ["avibase-B682B2A9",[],["EUCO","FULATR"]],
