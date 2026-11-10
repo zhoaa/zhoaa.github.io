@@ -119,6 +119,8 @@ function loadQuiz(orders, extraAnswers, regions) {
   const feedback = byId("feedback");
   const guess = byId("guess");
   const form = byId("guess-form");
+  const resetProgress = byId("reset-progress");
+  resetProgress.disabled = found.size === 0;
   const rows = new Map();
   const visible = new Set();
   const taxonOptions = (taxa) => taxa.map(([name, label]) => [
@@ -217,6 +219,7 @@ function loadQuiz(orders, extraAnswers, regions) {
     }
 
     found.add(id);
+    resetProgress.disabled = false;
     fillAnswer(id);
     guess.value = "";
     feedback.textContent = found.size === species.length ? "You named every species!" : `✓ ${name}`;
@@ -231,6 +234,21 @@ function loadQuiz(orders, extraAnswers, regions) {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     acceptGuess(true);
+  });
+  resetProgress.addEventListener("click", () => {
+    if (!window.confirm("Clear all saved quiz progress? This applies to every region and group.")) return;
+    for (const id of found) {
+      const { row } = rows.get(id);
+      row.cells[0].textContent = "—";
+      row.classList.remove("solved");
+    }
+    found.clear();
+    save();
+    updateScore();
+    guess.value = "";
+    feedback.textContent = "Progress reset.";
+    resetProgress.disabled = true;
+    guess.focus();
   });
   const hideTaxonomy = byId("hide-taxonomy");
   const table = byId("checklist");
