@@ -1,0 +1,30 @@
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+http://:8080 {
+	bind 127.0.0.1
+
+	respond /healthz "Crossbirds media server is running" 200
+
+	handle_path /media/* {
+		@photo {
+			path_regexp (?i)\.(avif|gif|jpeg|jpg|png|webp)$
+			method GET HEAD
+		}
+
+		handle @photo {
+			root * ./photos
+			header {
+				Cache-Control "public, max-age=3600"
+				X-Content-Type-Options nosniff
+			}
+			file_server
+		}
+		respond 404
+	}
+
+	respond 404
+}

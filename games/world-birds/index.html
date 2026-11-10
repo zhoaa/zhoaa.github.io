@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Name every bird in the world · Games</title>
+  <link rel="stylesheet" href="quiz.css">
+  <script src="avilist-v2026.js" defer></script>
+  <script src="answer-aliases.js" defer></script>
+  <script src="quiz.js" defer></script>
+</head>
+<body>
+  <main>
+    <nav><a href="../index.html">← Games</a></nav>
+    <h1>Name every bird in the world</h1>
+    <p>Enter a common name, alternate English name, scientific name, or banding code. Press Enter to submit a code.</p>
+    <p class="source">Checklist adapted from <a href="https://doi.org/10.2173/avilist.v2026">AviList Core Team, v2026</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>).</p>
+
+    <p id="loading" role="status">Loading the checklist…</p>
+    <noscript><p>This quiz requires JavaScript.</p></noscript>
+    <section class="controls" id="console" aria-label="Quiz controls" hidden>
+      <form id="guess-form">
+        <input id="guess" type="text" aria-label="Your guess" placeholder="Enter a bird name or code" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="150">
+        <button type="submit">Guess</button>
+        <span id="score"></span>
+      </form>
+      <p id="feedback" role="status"></p>
+    </section>
+
+    <table id="checklist" aria-label="Species checklist" hidden>
+      <thead>
+        <tr>
+          <th scope="col">English name</th>
+          <th scope="col">Scientific name</th>
+          <th scope="col">Order</th>
+          <th scope="col">Family</th>
+        </tr>
+      </thead>
+      <tbody id="birds"></tbody>
+    </table>
+  </main>
+</body>
+</html>

@@ -1,3 +1,22 @@
-<!DOCTYPE html>
-
-...
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About Birds</title>
+  <link rel="stylesheet" href="about.css">
+  <link rel="stylesheet" href="birds-terminal.css">
+  <script src="birds-commands.js" defer></script>
+  <script src="birds-terminal.js" defer></script>
+</head>
+<body class="about-birds">
+  <main class="birds-terminal" id="birds-terminal">
+    <div id="terminal-output" role="log" aria-label="Terminal output" aria-live="polite"></div>
+    <form id="birds-command-form" class="command-line">
+      <span class="terminal-prompt" aria-hidden="true">&gt;</span>
+      <input id="birds-command-input" type="text" aria-label="Command" autocomplete="off" maxlength="256" spellcheck="false" autocapitalize="none" autofocus>
+    </form>
+    <noscript><p>JavaScript is required to use this terminal.</p></noscript>
+  </main>
+</body>
+</html>

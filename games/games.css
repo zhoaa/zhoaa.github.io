@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  background: white;
+  color: black;
+  font-family: "Times New Roman", Times, serif;
+}
+
+main {
+  width: min(60rem, 100% - 2rem);
+  margin: 1.5rem auto;
+  text-align: center;
+}
+
+h1 { margin: 1rem 0 0; }
+
+.games {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0;
+  margin: 1.25rem 0;
+  list-style: none;
+}
+
+.game {
+  display: grid;
+  place-items: center;
+  width: min(16rem, 100%);
+  min-height: 14rem;
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1.05;
+}
+
+.game img,
+.game span { grid-area: 1 / 1; }
+
+.game img {
+  max-width: 90%;
+  height: auto;
+  opacity: .38;
+  animation: float 5s ease-in-out infinite;
+}
+
+.game span { z-index: 1; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(.3rem); }
+  50% { transform: translateY(-.3rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game img { animation: none; }
+}

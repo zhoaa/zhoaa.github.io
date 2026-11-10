@@ -1,0 +1,116 @@
+* { box-sizing: border-box; }
+.portrait-page { background: linear-gradient(155deg, #93d3d1, #c1e9dc); }
+.portrait-nav, .portrait-shell { width: min(920px, calc(100% - 40px)); margin: auto; }
+.portrait-shell { padding-bottom: 48px; }
+.construction-banner {
+  --tape: repeating-linear-gradient(135deg, #171717 0 12px, #ffd329 12px 24px);
+  margin: 24px 0 0;
+  padding: 36px 16px;
+  background:
+    var(--tape) left top / 100% 10px repeat-x,
+    var(--tape) left bottom / 100% 10px repeat-x,
+    #ffd329;
+  color: #171717;
+  font-size: clamp(28px, 6vw, 64px);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .construction-banner { animation: caution-tape-scroll 900ms linear infinite; }
+}
+@keyframes caution-tape-scroll {
+  to { background-position: 33.941125px top, 33.941125px bottom; }
+}
+.portrait-paper { display: grid; grid-template-columns: 156px minmax(0, 1fr); column-gap: 32px; margin-top: 48px; padding: 40px; background: #f4fbf5e8; border: 1px solid #ffffffb3; box-shadow: 8px 8px 0 #35787812; }
+.portrait-header { position: relative; }
+.cramorant-sprite { position: absolute; right: -18px; bottom: -16px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(1px 0 #fff) drop-shadow(-1px 0 #fff) drop-shadow(0 1px #fff) drop-shadow(0 -1px #fff); }
+.portrait { display: block; width: 156px; height: 182px; object-fit: cover; object-position: 42% 25%; border: 4px solid #fff; box-shadow: 0 0 0 1px #235d5b26; filter: saturate(.92) contrast(.98) brightness(1.02) hue-rotate(3deg); }
+.portrait-label { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; margin: 0 0 12px; color: #537372; }
+.portrait-header h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 700; letter-spacing: -.05em; line-height: 1.15; }
+.portrait-header h1 span { color: #528777; }
+.biography { padding-top: 0; line-height: 1.8; min-width: 0; }
+.biography-greeting { font-size: 16px; font-weight: 400; letter-spacing: normal; line-height: 1.8; margin: 0 0 24px; }
+.biography-greeting strong { font-size: clamp(52px, 8vw, 80px); font-weight: 700; letter-spacing: -.05em; line-height: 1.15; }
+.portrait-header { align-self: start; }
+.portrait-links { grid-column: 2; }
+.biography ul { padding-left: 24px; margin: 12px 0 24px; }
+.biography a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #528777; }
+.biography a:hover { color: #17665f; }
+.biography:empty { min-height: 80px; }
+.portrait-links { display: flex; flex-wrap: wrap; gap: 16px 24px; border-top: 1px solid #235d5b26; padding-top: 24px; font-size: 12px; }
+.portrait-links a:hover { color: #17665f; text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 520px) {
+  .portrait-paper { margin-top: 28px; padding: 16px; grid-template-columns: 80px minmax(0, 1fr); column-gap: 16px; }
+  .portrait { width: 80px; height: 94px; }
+  .cramorant-sprite { right: -12px; bottom: -11px; width: 48px; height: 48px; }
+  .biography-greeting strong { font-size: clamp(36px, 9vw, 48px); }
+}
+:root { font-family: Courier, 'Courier New', monospace; color: #163e40; background: #93d3d1; }
+body { margin: 0; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+a:focus-visible { outline: 2px solid currentColor; outline-offset: 6px; }
+.page-shell { position: relative; width: min(100% - 48px, 1000px); margin: auto; }
+nav, footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; font-size: 13px; }
+nav { min-height: 94px; border-bottom: 1px solid #235d5b30; }
+nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+nav > span { letter-spacing: .04em; }
+.sky-cloud { position: fixed; width: 1100px; max-width: none; top: -320px; right: -350px; opacity: .28; pointer-events: none; }
+.intro { padding: 90px 0 56px; }
+.eyebrow, .section-number, .record-label { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
+.eyebrow { margin: 0 0 22px; }
+h1 { font-size: clamp(50px, 8vw, 88px); letter-spacing: -.065em; line-height: 1.05; margin: 0; font-weight: 600; }
+.accent { color: #498b6c; }
+.lede { font-size: 20px; line-height: 1.6; margin: 22px 0 0; }
+.about-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; }
+.card { padding: 34px; border: 1px solid #ffffff90; border-radius: 22px; background: #f4fffb99; }
+h2 { font-size: 25px; letter-spacing: -.035em; line-height: 1.25; margin: 20px 0; font-weight: 500; }
+p { font-size: 16px; line-height: 1.8; }
+.placeholder { color: #3e6665; }
+dl { margin-bottom: 0; } dt { font-size: 12px; font-weight: 700; margin-top: 22px; } dd { margin: 7px 0 0; color: #3e6665; font-size: 14px; line-height: 1.5; }
+.elsewhere { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.link-list { display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 12px; }
+.link-list a { padding: 15px 0; border-bottom: 1px solid #235d5b35; display: flex; justify-content: space-between; gap: 12px; }
+.link-list a:hover { color: #187961; }
+footer { padding: 36px 0; margin-top: 28px; color: #3e6665; }
+
+.about-birds { color: #fff; background: #000; }
+.birds-terminal { width: min(420px, calc(100% - 48px)); margin: 0 auto; padding-top: clamp(80px, 25vh, 240px); font: 14px/1.7 Courier, 'Courier New', monospace; }
+.terminal-input-row { display: flex; align-items: stretch; gap: 8px; }
+.terminal-input-row input { flex: 1; width: 100%; min-width: 0; font: inherit; color: #fff; background: #000; border: 1px solid #b93232; border-radius: 0; padding: 10px 12px; caret-color: #fff; }
+.terminal-input-row input:focus { outline: 1px solid #ed5555; outline-offset: 2px; }
+.terminal-input-row button { font: inherit; color: #fff; background: #000; border: 1px solid #b93232; border-radius: 0; padding: 10px 16px; cursor: pointer; }
+.terminal-input-row button:disabled { opacity: .4; }
+.terminal-input-row button:focus-visible { outline: 1px solid #ed5555; outline-offset: 2px; }
+#terminal-status { min-height: 24px; margin: 12px 0 0; font: inherit; color: #fff; }
+.about-birds .page-shell { max-width: 820px; }
+.about-birds nav { border-color: #c8b9a51c; color: #a79b93; font-family: monospace; }
+.about-birds .eerie-intro { text-align: center; padding-top: 110px; }
+.about-birds .eyebrow { color: #cd8884; }
+.about-birds h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: -.055em; }
+.about-birds .lede { font: italic 20px/1.7 Georgia, serif; color: #a79b93; }
+.tally { height: 43px; display: flex; gap: 11px; justify-content: center; width: 68px; position: relative; margin: 40px auto 10px; transform: rotate(-7deg); }
+.tally span { display: block; width: 2px; background: #984c4c; height: 38px; }
+.tally span:last-child { position: absolute; height: 70px; top: -15px; transform: rotate(65deg); }
+.record { border-top: 1px solid #a0927f35; padding: 28px 36px 40px; background: #ffffff02; }
+.record-label { display: flex; justify-content: space-between; gap: 20px; font-family: monospace; color: #a79b93; font-size: 10px; line-height: 1.6; }
+.record h2 { font-family: Georgia, serif; font-size: 30px; margin-top: 34px; }
+.record p { color: #b6aca3; max-width: 590px; }
+.record .quiet-line { margin: 30px 0 0; color: #d49b95; font-family: Georgia, serif; font-style: italic; }
+.second-record { margin-top: 24px; }
+.record .placeholder { color: #a79b93; }
+.record .redacted { color: #675452; letter-spacing: .12em; overflow-wrap: anywhere; }
+.return-link { display: flex; justify-content: space-between; border-bottom: 1px solid #a0927f35; padding: 28px 0; margin-top: 24px; font-family: Georgia, serif; font-style: italic; }
+.return-link:hover { color: #efb7af; }
+.about-birds footer { color: #a79b93; font: 12px monospace; }
+@media (max-width: 640px) {
+  .page-shell { width: calc(100% - 36px); }
+  nav { min-height: 76px; font-size: 11px; }
+  .intro, .about-birds .eerie-intro { padding-top: 64px; }
+  .about-grid, .elsewhere { grid-template-columns: 1fr; }
+  .card { padding: 26px; }
+  .record { padding: 25px 12px 30px; }
+  .record-label { flex-wrap: wrap; gap: 8px; }
+  .lede { font-size: 18px; }
+  footer { font-size: 11px; }
+}

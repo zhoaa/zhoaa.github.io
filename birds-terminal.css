@@ -1,0 +1,10 @@
+body.about-birds { margin: 0; padding: 12px; height: 100vh; height: 100dvh; overflow: hidden; background: #000; color: #fff; }
+.birds-terminal { --terminal-red: #ef5555; width: 100%; height: 100%; margin: 0; padding: clamp(14px, 3vw, 28px); border: 1px solid #b93232; overflow-y: auto; font: 16px/1.6 Courier, 'Courier New', monospace; scrollbar-color: #b93232 #000; }
+.terminal-line { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.terminal-command, .terminal-command-name { color: var(--terminal-red); }
+.terminal-command-name { font-weight: 700; }
+.command-line { display: flex; align-items: baseline; gap: 12px; margin: 0; }
+.terminal-prompt { flex: 0 0 auto; color: #fff; user-select: none; }
+.command-line input { flex: 1; min-width: 0; width: 100%; padding: 0; border: 0; border-radius: 0; outline: none; background: transparent; color: var(--terminal-red); caret-color: var(--terminal-red); font: inherit; }
+.command-line:focus-within .terminal-prompt { color: var(--terminal-red); }
+.terminal-command .terminal-prompt { margin-right: 12px; }

@@ -1,60 +1,102 @@
 <!doctype html>
 <html lang="en">
 <head>
-
-    <link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAHkBpAACV/wAAs/8AB4fwAACM/wAAov8AAMP/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAERAAAAAQAAABAAAAAACZERAAAAAAGYyIiQAAAAGMyMzM2AAAGMzUzMzNgAAYzNzczMzYAAzN3d3d3cwADM3d3cAAAAAA3d3cAAAAAADdzAAAAAAAicXcAAAAAAAd3dwAAAAAAAHdwAAAAAAAAAAAAAAAAD//wAAz8cAAPfvAAD4HwAA8A8AAOAHAADAAwAAwAEAAMABAADAPwAA4H8AAOH/AACB/wAAwf8AAOP/AAD//wAA" rel="icon" type="image/x-icon">
-    <link rel="stylesheet" href="index.css">
-    <script src="index.js" defer></script>
-    <script src="https://kit.fontawesome.com/16b8aeb586.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cabin&display=swap" rel="stylesheet">
-
+  <link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAHkBpAACV/wAAs/8AB4fwAACM/wAAov8AAMP/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAERAAAAAQAAABAAAAAACZERAAAAAAGYyIiQAAAAGMyMzM2AAAGMzUzMzNgAAYzNzczMzYAAzN3d3d3cwADM3d3cAAAAAA3d3cAAAAAADdzAAAAAAAicXcAAAAAAAd3dwAAAAAAAHdwAAAAAAAAAAAAAAAAD//wAAz8cAAPfvAAD4HwAA8A8AAOAHAADAAwAAwAEAAMABAADAPwAA4H8AAOH/AACB/wAAwf8AAOP/AAD//wAA" rel="icon" type="image/x-icon">
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
+  <script src="cloud-glitch.js" defer></script>
+  <script src="preview.js" defer></script>
+  <script src="rain.js" defer></script>
+  <script src="https://kit.fontawesome.com/16b8aeb586.js" crossorigin="anonymous"></script>
 </head>
 <body id="body">
-    <!-- <div id="banner-messsage">
-        
-    </div> -->
-    
-    <div id="overlay"></div>
-    <img src="img/birdie.gif" alt="A flying bird. Click it to interact." id="img" class="pimg" draggable="false">
-    <div id="hero">
-            
-            <img class="cloud" id="nice_cloud" src="img/nice_cloud.svg" alt=""/>
-            <div id="profile">
-                <h1 class="glow text">Aaron Zhou</h1>
-                <div>
-                    <a href="https://zhoaa.github.io/assets/resume.pdf" class="fa-solid fa-file-invoice fa-2x brand-icons glow"title="My Resume!"></a>
-                    <a href="https://github.com/zhoaa" class="fa-brands fa-github fa-2x brand-icons tooltip glow" title="Github!"></a>
-                    <a href="https://www.linkedin.com/in/zhoaa/" class="fa-brands fa-linkedin fa-2x brand-icons glow" title="LinkedIn!"></a>
-                    <a id="bird" href="https://crossbirds.substack.com/" class="fa-solid fa-crow fa-2x brand-icons glow" title="My Personal Blog!"></a>
-                    <a href="https://zhoaa.github.io/crossbirds/" class="fa-solid fa-feather fa-2x brand-icons glow" title="Crossbirds — my blog"></a>
-                </div>
-            </div>
-            
-            
+  <div id="overlay"></div>
+  <button type="button" aria-label="A flying duck. Click it to interact." id="img" class="pimg" draggable="false"></button>
+  <div id="crosshair" aria-hidden="true"></div>
+  <div class="weather-layer" aria-hidden="true"></div>
+  <canvas id="pixel-rain" aria-hidden="true"></canvas>
+  <canvas id="pixel-rain-back" aria-hidden="true"></canvas>
+  <!-- Temporary theme preview: remove this block and its CSS/JS when finished. -->
+  <template id="preview-controls">
+  <div class="theme-preview" role="group" aria-label="Sky and weather preview">
+    <span>Preview</span>
+    <button type="button" data-theme="auto" aria-pressed="true">Auto</button>
+    <button type="button" data-theme="midday" aria-pressed="false">Day</button>
+    <button type="button" data-theme="sunrise" aria-pressed="false">Sunrise</button>
+    <button type="button" data-theme="sunset" aria-pressed="false">Sunset</button>
+    <button type="button" data-theme="night" aria-pressed="false">Night</button>
+    <label for="weather-preview">Weather</label>
+    <select id="weather-preview">
+      <option value="auto">Auto</option>
+      <option value="clear">Clear</option>
+      <option value="partly-cloudy">Partly cloudy</option>
+      <option value="cloudy">Cloudy</option>
+      <option value="rain">Rain</option>
+      <option value="snow">Snow</option>
+      <option value="fog">Fog</option>
+      <option value="storm">Storm</option>
+    </select>
+    <button type="button" id="dead-preview" aria-pressed="false">Dead mode</button>
+  </div>
+  </template>
+  <div class="sky-lights" aria-hidden="true">
+    <div class="stars"></div>
+    <img class="sun" src="img/sky-sun.svg" alt="">
+    <img class="moon" src="img/sky-moon.svg" alt="">
+  </div>
+  <div class="distant-clouds" aria-hidden="true">
+    <img class="extra-cloud" src="img/pixel-cloud.svg" alt="">
+    <img class="extra-cloud" src="img/pixel-cloud.svg" alt="">
+    <img class="extra-cloud" src="img/pixel-cloud.svg" alt="">
+    <img class="extra-cloud" src="img/pixel-cloud.svg" alt="">
+    <img src="img/pixel-cloud.svg" alt="">
+    <img src="img/pixel-cloud.svg" alt="">
+    <img src="img/pixel-cloud.svg" alt="">
+    <img src="img/pixel-cloud.svg" alt="">
+    <img src="img/pixel-cloud.svg" alt="">
+  </div>
+  <svg class="cloud-filters" aria-hidden="true" width="0" height="0">
+    <defs>
+      <filter id="night-cloud" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values=".23 0 0 0 0  0 .28 0 0 0  0 0 .36 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="night-distant-cloud" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values=".42 0 0 0 0  0 .49 0 0 0  0 0 .61 0 0  0 0 0 1 0"/>
+      </filter>
+      <filter id="cloud-edge-glitch" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="outer"/>
+        <feMorphology in="SourceAlpha" operator="erode" radius="5" result="inner"/>
+        <feComposite in="outer" in2="inner" operator="out" result="edge"/>
+        <feTurbulence type="fractalNoise" baseFrequency=".025 .16" numOctaves="1" seed="7" result="noise"/>
+        <feDisplacementMap in="edge" in2="noise" scale="18" xChannelSelector="R" yChannelSelector="G" result="broken-edge"/>
+        <feFlood flood-color="#424343"/>
+        <feComposite in2="broken-edge" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
+  <div id="hero">
+    <img class="cloud" id="nice_cloud" src="img/main-cloud.svg" alt="">
+    <img class="cloud cloud-slice slice-top" src="img/main-cloud.svg" alt="" aria-hidden="true">
+    <img class="cloud cloud-slice slice-upper" src="img/main-cloud.svg" alt="" aria-hidden="true">
+    <img class="cloud cloud-slice slice-lower" src="img/main-cloud.svg" alt="" aria-hidden="true">
+    <img class="cloud cloud-slice slice-bottom" src="img/main-cloud.svg" alt="" aria-hidden="true">
+    <img class="cloud cloud-edge" src="img/cloud-glitch-edge.svg" alt="" aria-hidden="true">
+    <img class="cloud cloud-edge cloud-edge-echo" src="img/cloud-glitch-edge.svg" alt="" aria-hidden="true">
+    <img class="cloud cloud-edge cloud-edge-echo-secondary" src="img/cloud-glitch-edge.svg" alt="" aria-hidden="true">
+    <div id="profile">
+      <h1 class="glow text">Aaron Zhou</h1>
+      <div>
+        <a href="https://zhoaa.github.io/assets/resume.pdf" class="fa-solid fa-file-invoice fa-2x brand-icons glow" title="My Resume!"></a>
+        <a href="https://github.com/zhoaa" class="fa-brands fa-github fa-2x brand-icons tooltip glow" title="Github!"></a>
+        <a href="https://www.linkedin.com/in/zhoaa/" class="fa-brands fa-linkedin fa-2x brand-icons glow" title="LinkedIn!"></a>
+        <a id="bird" href="games/index.html" class="fa-solid fa-crow fa-2x brand-icons glow" title="Games" aria-label="Games"></a>
+        <a href="https://zhoaa.github.io/crossbirds/" class="fa-solid fa-feather fa-2x brand-icons glow" title="Crossbirds — my blog"></a>
+      </div>
     </div>
-<script type="text/javascript">
-    obfu_data = {
-    "delay":0,
-    "start_time":40,
-    "end_time":20,
-    "disp_time":2000,
-    "loop":true,
-    "obfu_chars":"0123456789█!<>-_\\/[]{}—=+*^?#",
-    "phrases":[
-    'About Me',
-    'Aaron Zhou',
-    'Ouch!',
-    'Why!?',
-    'Ow!',
-    'Hey!',
-    'Arghh!',
-    '...'
-    ]
-    }
-    </script>
-<script type="text/javascript" src="obfuscator.js"></script>
+  </div>
+  <script>
+    obfu_data = {"delay":0,"start_time":40,"end_time":20,"disp_time":2000,"loop":true,"obfu_chars":"0123456789█!<>-_\\/[]{}—=+*^?#","phrases":["About Me","Aaron Zhou","Ouch!","Why!?","Ow!","Hey!","Arghh!","..."]};
+  </script>
+  <script src="obfuscator.js"></script>
 </body>
 </html>
-

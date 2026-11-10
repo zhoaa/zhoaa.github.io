@@ -100,21 +100,28 @@ let birdshoot = 0;
 
 function bird() {
     birdshoot++;
-    if(birdshot == 5) {
-        fx.setText(phrases[7]);
-        phrases[0] = "...";
-        phrases[1] = "...";
-        el.addEventListener('click', function(){
-            window.location = 'aboutbirds.html';
-        })
-    } else {
+    if(birdshot < 5) {
         fx.setText(phrases[Math.floor(Math.random() * 5) + 2]);
     }
     
 }
 
+const originalGreeting = phrases.slice(0, 2);
+let finalBirdState = false;
+document.addEventListener("bird-finalized", function() {
+    finalBirdState = true;
+    fx.setText(phrases[7]);
+    phrases[0] = "...";
+    phrases[1] = "...";
+});
+document.addEventListener('bird-reset', function() {
+    finalBirdState = false;
+    [phrases[0], phrases[1]] = originalGreeting;
+    fx.setText(phrases[1]);
+});
+
 img.addEventListener("click", bird);
 el.addEventListener("mouseover", start);
 el.addEventListener('click', function(){
-    window.location = 'aboutme.html';
+    window.location = finalBirdState ? 'aboutbirds.html' : 'aboutme.html';
 })

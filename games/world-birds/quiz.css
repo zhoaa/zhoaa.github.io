@@ -1,0 +1,41 @@
+body {
+  margin: 0;
+  color: #222;
+  background: #fff;
+  font: 1rem/1.45 system-ui, sans-serif;
+}
+
+main { width: min(70rem, 100% - 2rem); margin: 1rem auto 2rem; }
+h1 { font-size: clamp(1.6rem, 4vw, 2rem); line-height: 1.2; margin: 1rem 0 .5rem; }
+p { margin: .5rem 0; }
+.source { font-size: .82rem; color: #555; }
+a { color: #195489; }
+
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+  padding: .65rem 0 .35rem;
+}
+
+form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+input, button { font: inherit; padding: .35rem .5rem; }
+input { flex: 0 1 19rem; min-width: 0; }
+#score { white-space: nowrap; font-weight: 600; }
+#feedback { min-height: 1.45em; margin: .25rem 0 0; font-size: .9rem; }
+
+table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .9rem; }
+th, td { border: 1px solid #d1d1d1; padding: .3rem .45rem; text-align: left; overflow-wrap: anywhere; }
+th { background: #ececec; }
+tr:nth-child(even) { background: #f8f8f8; }
+.solved td:first-child { background: #e4f2dc; }
+
+@media (max-width: 35rem) {
+  th, td { padding: .25rem; }
+  table { font-size: .8rem; }
+}
+
+@media (max-height: 30rem) {
+  .controls { position: static; }
+}
