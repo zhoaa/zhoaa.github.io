@@ -14,7 +14,7 @@
   <main>
     <nav><a href="../index.html">← Games</a></nav>
     <h1>Name every bird in the world</h1>
-    <p>Enter a common name, alternate English name, scientific name, or banding code. Press Enter to submit a code.</p>
+    <p id="guess-instructions">Enter a common name, alternate English name, scientific name, or banding code. Press Enter to submit a code.</p>
     <p class="source">Checklist adapted from <a href="https://doi.org/10.2173/avilist.v2026">AviList Core Team, v2026</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Regions use <a href="https://support.ebird.org/en/support/solutions/articles/48001255129-explore-regions-and-hotspots">eBird</a> reports.</p>
 
     <p id="loading" role="status">Loading the checklist…</p>
@@ -31,6 +31,7 @@
         <label><input type="checkbox" value="order" aria-controls="checklist"> Hide order</label>
         <label><input type="checkbox" value="family" aria-controls="checklist"> Hide family</label>
       </div>
+      <label><input id="evil-mode" type="checkbox" aria-controls="checklist"> evil ucpi mode</label>
       <button id="reset-progress" type="button" disabled>Reset progress</button>
       <p id="feedback" role="status"></p>
     </section>

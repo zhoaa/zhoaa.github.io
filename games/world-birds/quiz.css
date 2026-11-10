@@ -51,7 +51,8 @@ table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 
 th, td { border: 1px solid #d1d1d1; padding: .3rem .45rem; text-align: left; overflow-wrap: anywhere; }
 th { background: #ececec; }
 tr:nth-child(even) { background: #f8f8f8; }
-.solved td:first-child { background: #e4f2dc; }
+table:not(.evil-mode) .solved td:first-child,
+.evil-mode .solved td:nth-child(2) { background: #e4f2dc; }
 .column-controls { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .5rem; }
 .hide-scientific tr > :nth-child(2),
 .hide-order tr > :nth-child(3),
