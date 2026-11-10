@@ -6,7 +6,7 @@ const normalize = (name) => name.normalize("NFKD").toLowerCase().replace(/[^\p{L
 const birdGroups = {
   "Waterfowl": ["Anatidae"],
   "Birds of prey": ["Accipitriformes", "Cathartiformes", "Falconiformes", "Strigiformes"],
-  "Hummingbirds": ["Trochilidae"],
+  "Fish": [],
 };
 
 function loadQuiz(orders, extraAnswers, regions) {
@@ -88,7 +88,7 @@ function loadQuiz(orders, extraAnswers, regions) {
     for (const [id, { row, order, family }] of rows) {
       row.hidden = (selectedOrder !== "" && order !== selectedOrder)
         || (selectedRegion !== undefined && !selectedRegion.has(id))
-        || (selectedGroup !== undefined && !selectedGroup.includes(order) && !selectedGroup.includes(family));
+        || (selectedGroup?.length > 0 && !selectedGroup.includes(order) && !selectedGroup.includes(family));
       if (!row.hidden) visible.add(id);
     }
     feedback.textContent = visible.size ? "" : "No species match these filters.";
