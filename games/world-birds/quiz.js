@@ -250,13 +250,12 @@ function loadQuiz(orders, extraAnswers, regions) {
     resetProgress.disabled = true;
     guess.focus();
   });
-  const hideTaxonomy = byId("hide-taxonomy");
   const table = byId("checklist");
-  function updateColumns() {
-    table.classList.toggle("hide-taxonomy", hideTaxonomy.checked);
+  for (const checkbox of document.querySelectorAll(".column-controls input")) {
+    const updateColumn = () => table.classList.toggle(`hide-${checkbox.value}`, checkbox.checked);
+    checkbox.addEventListener("change", updateColumn);
+    updateColumn();
   }
-  hideTaxonomy.addEventListener("change", updateColumns);
-  updateColumns();
 
   applyFilters();
   if (found.size === species.length) feedback.textContent = "You named every species!";

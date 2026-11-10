@@ -26,7 +26,11 @@
         <span id="score"></span>
       </form>
       <div class="filters" id="filters"></div>
-      <label><input id="hide-taxonomy" type="checkbox" aria-controls="checklist"> Hide scientific names and families</label>
+      <div class="column-controls" role="group" aria-label="Hide checklist columns">
+        <label><input type="checkbox" value="scientific" aria-controls="checklist"> Hide scientific name</label>
+        <label><input type="checkbox" value="order" aria-controls="checklist"> Hide order</label>
+        <label><input type="checkbox" value="family" aria-controls="checklist"> Hide family</label>
+      </div>
       <button id="reset-progress" type="button" disabled>Reset progress</button>
       <p id="feedback" role="status"></p>
     </section>

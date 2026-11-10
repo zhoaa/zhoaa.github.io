@@ -52,7 +52,10 @@ th, td { border: 1px solid #d1d1d1; padding: .3rem .45rem; text-align: left; ove
 th { background: #ececec; }
 tr:nth-child(even) { background: #f8f8f8; }
 .solved td:first-child { background: #e4f2dc; }
-.hide-taxonomy tr > :is(:nth-child(2), :nth-child(4)) { display: none; }
+.column-controls { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .5rem; }
+.hide-scientific tr > :nth-child(2),
+.hide-order tr > :nth-child(3),
+.hide-family tr > :nth-child(4) { display: none; }
 
 @media (max-width: 35rem) {
   th, td { padding: .25rem; }
