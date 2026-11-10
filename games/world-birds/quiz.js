@@ -3,8 +3,13 @@
 const storageKey = "world-birds:avilist-v2026";
 const byId = (id) => document.getElementById(id);
 const normalize = (name) => name.normalize("NFKD").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+const birdGroups = {
+  "Waterfowl": ["Anatidae"],
+  "Birds of prey": ["Accipitriformes", "Cathartiformes", "Falconiformes", "Strigiformes"],
+  "Hummingbirds": ["Trochilidae"],
+};
 
-function loadQuiz(orders, extraAnswers) {
+function loadQuiz(orders, extraAnswers, regions) {
   const species = orders.flatMap(([, , families]) => families.flatMap(([, , birds]) => birds));
   const ids = new Set(species.map(([id]) => id));
   const official = new Map();
@@ -52,11 +57,42 @@ function loadQuiz(orders, extraAnswers) {
   const feedback = byId("feedback");
   const guess = byId("guess");
   const form = byId("guess-form");
-  const total = species.length.toLocaleString();
   const rows = new Map();
+  const visible = new Set();
+  const orderFilter = byId("order-filter");
+  const regionFilter = byId("region-filter");
+  const groupFilter = byId("group-filter");
+  const regionSpecies = new Map();
+
+  for (const [code, label, members] of regions) {
+    regionFilter.add(new Option(label, code));
+    regionSpecies.set(code, new Set(members));
+  }
+  for (const label of Object.keys(birdGroups)) {
+    groupFilter.add(new Option(label, label));
+  }
 
   function updateScore() {
-    byId("score").textContent = `${found.size.toLocaleString()} / ${total} named`;
+    let named = 0;
+    for (const id of found) {
+      if (visible.has(id)) named++;
+    }
+    byId("score").textContent = `${named.toLocaleString()} / ${visible.size.toLocaleString()} named`;
+  }
+
+  function applyFilters() {
+    const selectedOrder = orderFilter.value;
+    const selectedRegion = regionSpecies.get(regionFilter.value);
+    const selectedGroup = birdGroups[groupFilter.value];
+    visible.clear();
+    for (const [id, { row, order, family }] of rows) {
+      row.hidden = (selectedOrder !== "" && order !== selectedOrder)
+        || (selectedRegion !== undefined && !selectedRegion.has(id))
+        || (selectedGroup !== undefined && !selectedGroup.includes(order) && !selectedGroup.includes(family));
+      if (!row.hidden) visible.add(id);
+    }
+    feedback.textContent = visible.size ? "" : "No species match these filters.";
+    updateScore();
   }
 
   function fillAnswer(id) {
@@ -66,7 +102,8 @@ function loadQuiz(orders, extraAnswers) {
   }
 
   const checklist = document.createDocumentFragment();
-  for (const [order, , families] of orders) {
+  for (const [order, label, families] of orders) {
+    orderFilter.add(new Option(label ? `${order} (${label})` : order, order));
     for (const [family, , birds] of families) {
       for (const [id, english, scientific] of birds) {
         const row = document.createElement("tr");
@@ -74,7 +111,7 @@ function loadQuiz(orders, extraAnswers) {
           const cell = row.insertCell();
           cell.textContent = value;
         }
-        rows.set(id, { row, english });
+        rows.set(id, { row, english, order, family });
         if (found.has(id)) fillAnswer(id);
         checklist.append(row);
       }
@@ -101,6 +138,13 @@ function loadQuiz(orders, extraAnswers) {
 
     const [id] = matches;
     const name = names.get(id);
+    if (!visible.has(id)) {
+      if (submitted) {
+        feedback.textContent = "That bird is outside the current filters.";
+        guess.select();
+      }
+      return;
+    }
     if (found.has(id)) {
       if (submitted) {
         feedback.textContent = `${name} is already on your list.`;
@@ -125,15 +169,26 @@ function loadQuiz(orders, extraAnswers) {
     event.preventDefault();
     acceptGuess(true);
   });
-  updateScore();
+  const hideTaxonomy = byId("hide-taxonomy");
+  const table = byId("checklist");
+  function updateColumns() {
+    table.classList.toggle("hide-taxonomy", hideTaxonomy.checked);
+  }
+  hideTaxonomy.addEventListener("change", updateColumns);
+  updateColumns();
+
+  for (const filter of [orderFilter, regionFilter, groupFilter]) {
+    filter.addEventListener("change", applyFilters);
+  }
+  applyFilters();
   if (found.size === species.length) feedback.textContent = "You named every species!";
   byId("loading").hidden = true;
   byId("console").hidden = false;
-  byId("checklist").hidden = false;
+  table.hidden = false;
 }
 
 try {
-  loadQuiz(aviListV2026, birdAnswerAliases);
+  loadQuiz(aviListV2026, birdAnswerAliases, ebirdRegions);
 } catch (error) {
   console.error("Could not initialize the bird quiz", error);
   byId("loading").textContent = "The checklist couldn’t load. Refresh the page to try again.";

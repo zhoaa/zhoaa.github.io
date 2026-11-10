@@ -20,8 +20,11 @@ a { color: #195489; }
 }
 
 form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
-input, button { font: inherit; padding: .35rem .5rem; }
-input { flex: 0 1 19rem; min-width: 0; }
+input[type="text"], button { font: inherit; padding: .35rem .5rem; }
+input[type="text"] { flex: 0 1 19rem; min-width: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .5rem 0; }
+.filters label { max-width: 100%; font-size: .9rem; }
+.filters select { max-width: 100%; font: inherit; }
 #score { white-space: nowrap; font-weight: 600; }
 #feedback { min-height: 1.45em; margin: .25rem 0 0; font-size: .9rem; }
 
@@ -30,6 +33,7 @@ th, td { border: 1px solid #d1d1d1; padding: .3rem .45rem; text-align: left; ove
 th { background: #ececec; }
 tr:nth-child(even) { background: #f8f8f8; }
 .solved td:first-child { background: #e4f2dc; }
+.hide-taxonomy tr > :is(:nth-child(2), :nth-child(4)) { display: none; }
 
 @media (max-width: 35rem) {
   th, td { padding: .25rem; }
