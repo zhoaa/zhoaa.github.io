@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Name the plants of the Southeastern United States · Games</title>
+  <link rel="stylesheet" href="../world-birds/quiz.css">
+  <link rel="stylesheet" href="plants.css">
+  <script src="fsus-2026.js" defer></script>
+  <script src="../quiz-common.js" defer></script>
+  <script src="quiz.js" defer></script>
+</head>
+<body>
+  <main>
+    <nav><a href="../index.html">← Games</a></nav>
+    <h1>Name the plants of the Southeastern United States</h1>
+    <p>Enter a full scientific name. Guess in any order. Your progress is saved in this browser.</p>
+    <p class="source">Based on the 2026 <a href="https://fsus.ncbg.unc.edu/species-noimages.php?family=&amp;minrank=1&amp;region=-1&amp;omitspnov=on&amp;omitsspvar=on&amp;omithybrid=on&amp;maximage=99999999999999999999999999999999">Flora of the Southeastern United States</a>, A.S. Weakley &amp; Southeastern Flora Team. Unnamed species, subspecies, varieties, and hybrids omitted.</p>
+    <p id="loading" role="status">Loading the checklist…</p>
+    <noscript><p>This quiz requires JavaScript.</p></noscript>
+    <section class="controls" id="console" aria-label="Quiz controls" hidden>
+      <form id="guess-form">
+        <input id="guess" type="text" aria-label="Your guess" placeholder="Enter a scientific name" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="200">
+        <button type="submit">Guess</button>
+        <span id="score"></span>
+      </form>
+      <div class="filters" id="filters"></div>
+      <div class="column-controls" role="group" aria-label="Hide checklist columns">
+        <label><input type="checkbox" value="genus" aria-controls="checklist"> Hide genus</label>
+        <label><input type="checkbox" value="plant-family" aria-controls="checklist"> Hide family</label>
+      </div>
+      <button id="reset-progress" type="button" disabled>Reset progress</button>
+      <p id="feedback" role="status"></p>
+    </section>
+    <table id="checklist" aria-label="Plant checklist" hidden>
+      <thead>
+        <tr>
+          <th scope="col">Scientific name</th>
+          <th scope="col">Genus</th>
+          <th scope="col">Family</th>
+        </tr>
+      </thead>
+      <tbody id="plants"></tbody>
+    </table>
+  </main>
+</body>
+</html>
