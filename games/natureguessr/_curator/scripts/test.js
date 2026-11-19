@@ -50,13 +50,17 @@ L.validatePlan(result.plan,ids);
 const existing=L.emptyPlan();existing.approved=ids.slice(0,6);existing.queue=ids.slice(3,6);existing.schedule['2026-12-31']=ids.slice(0,3);
 result=L.scheduleQueue(existing,'2026-12-31');assert.deepEqual(result.plan.schedule['2026-12-31'],ids.slice(0,3));assert.deepEqual(result.plan.schedule['2027-01-01'],ids.slice(3,6),'existing editions preserved');
 for(const bad of [
-  {...plan,queue:[ids[0],ids[0]]},
   {...plan,queue:['unknown']},
   {...plan,rejected:[ids[0]]},
   {...plan,queue:[],schedule:{'2026-12-31':ids.slice(0,2)}},
-  {...plan,queue:[],schedule:{'2026-12-31':ids.slice(0,3),'2027-01-01':ids.slice(0,3)}},
-  {...plan,schedule:{'2026-12-31':ids.slice(0,3)}}
+  {...plan,queue:[],schedule:{'2026-12-31':[ids[0],ids[0],ids[1]]}},
 ])assert.throws(()=>L.validatePlan(bad,ids));
+const [first,second,third]=ids;
+const repeat=L.validatePlan({...L.emptyPlan(),approved:[first,second,third],queue:[first,first,second,second,third,third,first]},ids);
+const repeated=L.scheduleQueue(repeat,'2026-12-31');
+assert.deepEqual(repeated.plan.schedule,{'2026-12-31':[first,second,third],'2027-01-01':[first,second,third]});
+assert.deepEqual(repeated.plan.queue,[first]);
+L.validatePlan(repeated.plan,ids);
 assert.equal(L.roundScore(D.puzzles[0],[D.puzzles[0].countryId]),5000);
 assert.equal(L.roundScore(D.puzzles[0],['USA',D.puzzles[0].countryId]),4000);
 assert.equal(L.roundScore(D.puzzles[0],['USA']),0);

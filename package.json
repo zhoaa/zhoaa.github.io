@@ -5,6 +5,7 @@
     "dev": "python3 -m http.server 8000",
     "preview": "python3 -m http.server 8000",
     "natguessr:curate": "python3 games/natureguessr/_curator/scripts/build_player.py && python3 -m http.server 8000 --bind 127.0.0.1",
+    "natguessr:schedule": "node games/natureguessr/_curator/scripts/publish-curation.js --upload",
     "natguessr:release": "node games/natureguessr/_curator/scripts/publish-curation.js"
   }
 }

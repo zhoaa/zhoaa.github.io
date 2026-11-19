@@ -6,20 +6,19 @@ The Games card opens the [daily player](https://zhoaa.github.io/games/naturegues
 
 1. From the repository root, run `npm run natguessr:curate`. Leave the terminal running and open `http://localhost:8000/games/natureguessr/_curator/` on your computer. Use the same browser and address each time to keep your saved curation.
 2. In **Curator desk**, search the candidate bank. Each set has five observations, one per species. Review the photos and evidence. Use **Preview as player** to try a set, then click **Approve & queue** for each set you want.
-3. Open **Queue**, reorder the sets, and choose a **First day**. Click **Schedule queued sets**. Each day takes three sets in queue order. You can schedule several days in one sitting and use **Preview as player** next to a date to test the full edition.
+3. Open **Queue**, reorder the sets, and choose a **First day**. Click **Schedule queued sets**. Each day takes three distinct sets. Click **Add to queue** again to reuse a set on a later date. You can schedule several days in one sitting and use **Preview as player** next to a date to test the full edition.
 4. Click **Export curation** and save the JSON somewhere private, such as Downloads. Export again after making changes. Use **Import a saved curation** in Queue to restore a backup or continue on another computer.
-5. On the edition's Toronto date, run this from the repository root, substituting the actual path to your latest export:
+5. Upload your export once for the whole batch. This requires GitHub CLI (`gh`) signed into an account that can manage this repository's Actions secrets.
 
    ```sh
-   npm run natguessr:release -- "$HOME/Downloads/natguessr-curation-YYYY-MM-DD.json"
-   git add games/natureguessr/daily/edition.js games/natureguessr/daily/index.html
-   git commit --only -m "Release today's natGuessr edition" -- games/natureguessr/daily/edition.js games/natureguessr/daily/index.html
-   git push origin main
+   npm run natguessr:schedule -- "$HOME/Downloads/natguessr-curation-YYYY-MM-DD.json"
    ```
 
-6. Once GitHub Pages finishes deploying, open the public daily game and check that it starts at round 1 of 3. Repeat step 5 on each release day. Allow time for the Pages build after pushing.
+GitHub Actions checks every 20 minutes and publishes only the three rounds assigned to the current Toronto date. Allow time for GitHub's scheduler and the Pages build. To check immediately, run **Release natGuessr daily edition** from the repository's Actions tab.
 
-The loopback server gives you a curator desk on your own computer. Your approvals, rejections, and calendar are stored in that browser, with the exported JSON as your private backup. The GitHub Pages Jekyll build excludes the whole `_curator` directory. The release command validates the export and publishes data for precisely the current Toronto date. Keep the exported plan out of Git and outside any public web root. The released answers are readable in browser source because scoring runs in the browser.
+The curator has no fixed queue length. Each upload replaces the private release schedule and includes only dates from today onward. GitHub limits the compressed release schedule to 48 KB. Keep your latest JSON export, import it if you switch browsers, and include any future dates you still want to use when you upload again. For example, queue nine sets and choose Monday as your start date to schedule Monday through Wednesday in one upload.
+
+The loopback server gives you a curator desk on your own computer. Your browser stores your drafts and the export is your private backup. GitHub stores your uploaded plan in the `NATGUESSR_SCHEDULE` Actions secret. Keep the exported plan outside any public web root and out of Git. The Pages build excludes the `_curator` directory. Released answers are readable in browser source because scoring runs in the browser.
 
 ## Country-first picking and image permissions
 
@@ -58,7 +57,7 @@ node games/natureguessr/_curator/scripts/test.js
 
 The builder uses anonymous, cached requests, at most one API request per 1.12 seconds. It caches published range maps and Natural Earth geometry, selects country-scoped candidate pools, rejects ambiguous support intersections, and emits `data.js`. No scraping of personal/private data or authentication is involved.
 
-Tests cover all bank entries' five distinct categories/taxa/photos, source country filters, both license types, supporting-country intersection, complete border feedback, curation import validation, duplicate/reused schedule rejection, three-per-day grouping, calendar boundaries, preservation of existing dates, and scoring. Browser checks cover actual loaded/credited images, duplicate/wrong/correct guesses, shared borders and distant-country feedback, photo expansion, source-link timing, approval/queue ordering, scheduling, daily progression, export, and mobile overflow.
+Tests cover all bank entries' five distinct categories/taxa/photos, source country filters, both license types, supporting-country intersection, complete border feedback, curation import validation, same-day duplicate rejection and cross-day reuse, three-per-day grouping, calendar boundaries, preservation of existing dates, and scoring. Browser checks cover actual loaded/credited images, duplicate/wrong/correct guesses, shared borders and distant-country feedback, photo expansion, source-link timing, approval/queue ordering, scheduling, daily progression, export, and mobile overflow.
 
 ## Expanded-bank filters
 

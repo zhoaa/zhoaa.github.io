@@ -14,29 +14,40 @@
   function validatePlan(value, puzzleIds) {
     if (!value || value.version!==1 || !Array.isArray(value.approved) || !Array.isArray(value.rejected) || !Array.isArray(value.queue) || !value.schedule || typeof value.schedule!=='object' || Array.isArray(value.schedule)) throw new Error('This is not a natGuessr curation file.');
     const known = new Set(puzzleIds);
-    for (const key of ['approved','rejected','queue']) {
+    for (const key of ['approved','rejected']) {
       if (value[key].some(id=>!known.has(id)) || new Set(value[key]).size!==value[key].length) throw new Error('The curation contains unknown or duplicate puzzles.');
     }
-    const approved = new Set(value.approved), rejected = new Set(value.rejected), occupied = new Set();
+    const approved = new Set(value.approved), rejected = new Set(value.rejected);
     if ([...approved].some(id=>rejected.has(id))) throw new Error('A puzzle cannot be approved and rejected.');
     for (const [day, ids] of Object.entries(value.schedule)) {
       if (!validDate(day) || !Array.isArray(ids) || ids.length!==3 || new Set(ids).size!==3) throw new Error('Each scheduled day needs a real date and three different puzzles.');
       for (const id of ids) {
-        if (!known.has(id) || !approved.has(id) || occupied.has(id)) throw new Error('Scheduled puzzles must be approved and cannot be reused.');
-        occupied.add(id);
+        if (!approved.has(id)) throw new Error('Scheduled puzzles must be approved.');
       }
     }
     for (const id of value.queue) {
-      if (!approved.has(id) || occupied.has(id)) throw new Error('Queue entries must be approved and not already scheduled.');
+      if (!approved.has(id)) throw new Error('Queue entries must be approved.');
     }
     return {version:1,approved:[...approved],rejected:[...rejected],queue:[...value.queue],schedule:JSON.parse(JSON.stringify(value.schedule))};
   }
   function scheduleQueue(plan, firstDay) {
     if (!validDate(firstDay)) throw new Error('Choose a valid start date.');
     const next=JSON.parse(JSON.stringify(plan));let day=firstDay,editions=0;
-    while (next.queue.length>=3) {
+    for (;;) {
+      const selected = new Set();
+      const positions = [];
+      for (const [index, id] of next.queue.entries()) {
+        if (selected.has(id)) continue;
+        selected.add(id);
+        positions.push(index);
+        if (selected.size === 3) break;
+      }
+      if (selected.size < 3) break;
       while (next.schedule[day]) day=addDays(day,1);
-      next.schedule[day]=next.queue.splice(0,3);editions++;day=addDays(day,1);
+      next.schedule[day] = [...selected];
+      for (const index of positions.reverse()) next.queue.splice(index, 1);
+      editions++;
+      day=addDays(day,1);
     }
     return {plan:next,editions};
   }

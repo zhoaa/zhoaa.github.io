@@ -28,14 +28,13 @@
   }
   try { const saved=publicPlayer?null:localStorage.getItem(PLAN_KEY);if(saved)plan=L.validatePlan(JSON.parse(saved),[...puzzles.keys()]); } catch { toast('Your saved curation could not be loaded. Import a backup if you have one.'); }
   for (const [day,ids] of Object.entries(window.NATURE_PUBLISHED_SCHEDULE||{})) {
-    if (!plan.schedule[day] && ids.length===3 && ids.every(id=>puzzles.has(id)) && !ids.some(scheduledDay)) {
-      plan.schedule[day]=ids;for(const id of ids){if(!plan.approved.includes(id))plan.approved.push(id);plan.rejected=plan.rejected.filter(x=>x!==id);plan.queue=plan.queue.filter(x=>x!==id);}
+    if (!plan.schedule[day] && ids.length===3 && ids.every(id=>puzzles.has(id))) {
+      plan.schedule[day]=ids;for(const id of ids){if(!plan.approved.includes(id))plan.approved.push(id);plan.rejected=plan.rejected.filter(x=>x!==id);}
     }
   }
   function approve(id) {
     if(puzzles.get(id)?.archived){toast('This set no longer meets the country-name rule. Choose another set.');return;}
-    if(scheduledDay(id)){toast('This set is already scheduled.');return;}
-    plan.rejected=plan.rejected.filter(x=>x!==id);if(!plan.approved.includes(id))plan.approved.push(id);if(!plan.queue.includes(id))plan.queue.push(id);
+    plan.rejected=plan.rejected.filter(x=>x!==id);if(!plan.approved.includes(id))plan.approved.push(id);plan.queue.push(id);
     persist();toast('Approved and added to your queue.');
   }
   function reject(id) {
@@ -87,8 +86,8 @@
     const query=L.normalize($('bank-search').value);
     const shown=activePuzzles.filter(p=>(filter==='all'||status(p.id)===filter)&&(!query||L.normalize(p.country+' '+p.clues.map(c=>c.name+' '+c.scientific).join(' ')).includes(query)));
     $('candidate-list').innerHTML=shown.map(p=>{
-      const state=status(p.id),queued=plan.queue.includes(p.id),day=scheduledDay(p.id);
-      return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id}${day?' · Scheduled '+esc(day):queued?' · In your queue':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" ${queued||day?'disabled':''}>${day?'Scheduled':queued?'In queue':'Approve & queue'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">${state==='rejected'?'Restore':'Reject'}</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
+      const state=status(p.id),queued=plan.queue.includes(p.id);
+      return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id}${queued?' · In your queue':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" >${state==='approved'?'Add to queue':'Approve & queue'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">${state==='rejected'?'Restore':'Reject'}</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
     }).join('');
     $('bank-empty').hidden=shown.length>0;installPhotoFallbacks($('candidate-list'));$('queue-count').textContent=plan.queue.length;
   }
@@ -99,9 +98,9 @@
   }
   function renderQueue() {
     if(publicPlayer)return;
-    $('queue-count').textContent=plan.queue.length;$('queue-meta').textContent=plan.queue.length+' ready · '+Math.floor(plan.queue.length/3)+' full days';
-    $('queue-list').innerHTML=plan.queue.map((id,i)=>{const p=puzzles.get(id);return `<li class="queue-item"><span class="queue-position">${String(i+1).padStart(2,'0')}</span><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-queue="up" data-id="${id}" ${i===0?'disabled':''} aria-label="Move ${esc(p.country)} earlier">Earlier</button><button data-queue="down" data-id="${id}" ${i===plan.queue.length-1?'disabled':''} aria-label="Move ${esc(p.country)} later">Later</button><button data-queue="remove" data-id="${id}">Remove</button></div></li>`;}).join('');
-    $('queue-empty').hidden=plan.queue.length>0;$('schedule-button').disabled=plan.queue.length<3||plan.queue.some(id=>puzzles.get(id)?.archived);
+    $('queue-count').textContent=plan.queue.length;$('queue-meta').textContent=plan.queue.length+' queued';
+    $('queue-list').innerHTML=plan.queue.map((id,i)=>{const p=puzzles.get(id);return `<li class="queue-item"><span class="queue-position">${String(i+1).padStart(2,'0')}</span><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-queue="up" data-position="${i}" ${i===0?'disabled':''} aria-label="Move ${esc(p.country)} earlier">Earlier</button><button data-queue="down" data-position="${i}" ${i===plan.queue.length-1?'disabled':''} aria-label="Move ${esc(p.country)} later">Later</button><button data-queue="remove" data-position="${i}">Remove</button></div></li>`;}).join('');
+    $('queue-empty').hidden=plan.queue.length>0;$('schedule-button').disabled=new Set(plan.queue).size<3||plan.queue.some(id=>puzzles.get(id)?.archived);
     const editions=Object.entries(plan.schedule).sort(([a],[b])=>a.localeCompare(b));
     $('schedule-list').innerHTML=editions.length?editions.map(([day,ids])=>`<div class="edition"><strong>${esc(day)}</strong>${ids.map((id,i)=>`<span>${i+1}. ${esc(puzzles.get(id).country)}${puzzles.get(id).archived?' · Needs replacement':''}</span>`).join('')}<button class="button ghost small" data-player-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview as player</button><button class="button ghost small" data-preview-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview edition</button><button class="button ghost small" data-unschedule="${day}">Return edition to queue</button></div>`).join(''):'<p class="small-copy">No editions scheduled yet.</p>';
   }
@@ -153,7 +152,7 @@
     else if(f){$('trail-heading').textContent=fmt(f.km)+' km'+' · '+L.direction(f.bearing);$('trail-copy').textContent=f.touching?'Shared border with '+countries.get(last).name+'.':'From '+countries.get(last).name+' to the nearest border.';}
     else{$('trail-heading').textContent='Direction';$('trail-copy').textContent='Each guess shows distance between borders and direction.';}
     $('round-result').hidden=!ended;
-    if(ended){const scheduled=scheduledDay(p.id),queued=plan.queue.includes(p.id);$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${fmt(L.roundScore(p,r.guesses))} points · ${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" ${queued||scheduled?'disabled':''}>${queued?'In your queue':scheduled?'Already scheduled':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See edition result':'Next country'}</button>`}</div>`;}
+    if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${fmt(L.roundScore(p,r.guesses))} points · ${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See edition result':'Next country'}</button>`}</div>`;}
     saveDaily();
   }
   const aliases={'usa':'USA','us':'USA','united states':'USA','america':'USA','uk':'GBR','britain':'GBR','great britain':'GBR','south korea':'KOR','north korea':'PRK','czechia':'CZE','ivory coast':'CIV','east timor':'TLS'};
@@ -196,7 +195,7 @@
     });
     $('import-file').addEventListener('change',async event=>{
       const file=event.target.files[0];if(!file)return;
-      try{if(file.size>1000000)throw new Error('That file is too large for a curation plan.');const imported=L.validatePlan(JSON.parse(await file.text()),[...puzzles.keys()]);plan=imported;persist();toast('Saved curation imported.');}catch(e){toast(e.message);}event.target.value='';
+      try{const imported=L.validatePlan(JSON.parse(await file.text()),[...puzzles.keys()]);plan=imported;persist();toast('Saved curation imported.');}catch(e){toast(e.message);}event.target.value='';
     });
   }
   document.addEventListener('click',event=>{
@@ -204,7 +203,7 @@
     if(target.dataset.view){event.preventDefault();showView(target.dataset.view);}
     if(target.dataset.filter){filter=target.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===filter);b.setAttribute('aria-pressed',String(b.dataset.filter===filter));});renderBank();}
     if(target.dataset.action){const {action,id}=target.dataset;if(!puzzles.has(id))return;if(action==='preview-user'){startPlayerPreview([id]);}if(action==='playtest'){$('detail-dialog').close();startPlaytest(id);}if(action==='review')review(id);if(action==='approve'){approve(id);if($('detail-dialog').open)$('detail-dialog').close();if(game&&view==='game')renderGame();}if(action==='reject'){reject(id);if($('detail-dialog').open)$('detail-dialog').close();}}
-    if(target.dataset.queue){const id=target.dataset.id,i=plan.queue.indexOf(id);if(i<0)return;const action=target.dataset.queue;if(action==='remove')plan.queue.splice(i,1);else{const j=i+(action==='up'?-1:1);if(j>=0&&j<plan.queue.length)[plan.queue[i],plan.queue[j]]=[plan.queue[j],plan.queue[i]];}persist();}
+    if(target.dataset.queue){const i=Number(target.dataset.position);if(!Number.isInteger(i)||i<0||i>=plan.queue.length)return;const action=target.dataset.queue;if(action==='remove')plan.queue.splice(i,1);else{const j=i+(action==='up'?-1:1);if(j>=0&&j<plan.queue.length)[plan.queue[i],plan.queue[j]]=[plan.queue[j],plan.queue[i]];}persist();}
     if(target.dataset.unschedule){const ids=plan.schedule[target.dataset.unschedule];if(ids){delete plan.schedule[target.dataset.unschedule];plan.queue.push(...ids);persist();toast('Edition returned to the queue.');}}
     if(target.dataset.playerEdition&&!publicPlayer)startPlayerPreview(plan.schedule[target.dataset.playerEdition],target.dataset.playerEdition);
     if(target.dataset.previewEdition&&!publicPlayer){showView('game');startDaily(target.dataset.previewEdition);}
