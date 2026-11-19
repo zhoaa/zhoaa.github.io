@@ -271,6 +271,7 @@ dialog.photo-dialog {
   box-shadow: 0 2px 8px #153f3214;
 }
 .help-example-photo .photo-button { aspect-ratio: 2; }
+.help-example-photo img { object-position: center 65%; }
 .help-example-photo .photo-info {
   display: block;
   flex: none;
