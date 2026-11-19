@@ -62,5 +62,16 @@
     return {plan:next,editions};
   }
   function roundScore(puzzle, guesses) { return guesses.length && guesses[guesses.length-1]===puzzle.countryId ? Math.max(0,6000-1000*guesses.length) : 0; }
-  return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,scheduleQueue,roundScore};
+  function proximityScore(guesses, feedback) {
+    if (guesses.length < 5) return 0;
+    const veryCloseLimit = distanceBands.find(band => band.tone === 'close').minimum;
+    return Math.max(0, ...guesses.map(id => {
+      const result = feedback[id];
+      if (!result) return 0;
+      if (result.touching) return 500;
+      if (result.km >= veryCloseLimit) return 0;
+      return 500 - Math.floor(result.km * 500 / veryCloseLimit);
+    }));
+  }
+  return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,scheduleQueue,roundScore,proximityScore};
 });

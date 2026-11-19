@@ -38,7 +38,7 @@
     persist();toast('Approved and added to your queue.');
   }
   function reject(id) {
-    if(scheduledDay(id)){toast('Unschedule its daily edition before rejecting this set.');return;}
+    if(scheduledDay(id)){toast('Remove this set from the schedule before rejecting it.');return;}
     plan.queue=plan.queue.filter(x=>x!==id);plan.approved=plan.approved.filter(x=>x!==id);
     if(plan.rejected.includes(id))plan.rejected=plan.rejected.filter(x=>x!==id);else plan.rejected.push(id);
     persist();
@@ -96,7 +96,7 @@
     if(publicPlayer)return;
     const archived=D.puzzles.length-activePuzzles.length;
     $('bank-archive-note').hidden=!archived;
-    $('bank-archive-note').textContent=archived+' older sets were archived because a species name gives away the answer country. Saved records are retained; replace archived sets in any existing queues or editions.';
+    $('bank-archive-note').textContent=archived+' older sets were archived because a species name gives away the answer country. Saved records are retained; replace archived sets in any existing queues or scheduled games.';
     $('bank-count').textContent=activePuzzles.length;$('all-count').textContent=activePuzzles.length;
     $('bank-country-count').textContent=new Set(activePuzzles.map(p=>p.countryId)).size+' countries · 5 observations per set';
     const query=L.normalize($('bank-search').value);
@@ -118,7 +118,7 @@
     $('queue-list').innerHTML=plan.queue.map((id,i)=>{const p=puzzles.get(id);return `<li class="queue-item"><span class="queue-position">${String(i+1).padStart(2,'0')}</span><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-queue="up" data-position="${i}" ${i===0?'disabled':''} aria-label="Move ${esc(p.country)} earlier">Earlier</button><button data-queue="down" data-position="${i}" ${i===plan.queue.length-1?'disabled':''} aria-label="Move ${esc(p.country)} later">Later</button><button data-queue="remove" data-position="${i}">Remove</button></div></li>`;}).join('');
     $('queue-empty').hidden=plan.queue.length>0;$('schedule-button').disabled=new Set(plan.queue).size<3||plan.queue.some(id=>puzzles.get(id)?.archived);
     const editions=Object.entries(plan.schedule).sort(([a],[b])=>a.localeCompare(b));
-    $('schedule-list').innerHTML=editions.length?editions.map(([day,ids])=>`<div class="edition"><strong>${esc(day)}</strong>${ids.map((id,i)=>`<span>${i+1}. ${esc(puzzles.get(id).country)}${puzzles.get(id).archived?' · Needs replacement':''}</span>`).join('')}<button class="button ghost small" data-player-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview as player</button><button class="button ghost small" data-preview-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview edition</button><button class="button ghost small" data-unschedule="${day}">Return edition to queue</button></div>`).join(''):'<p class="small-copy">No editions scheduled yet.</p>';
+    $('schedule-list').innerHTML=editions.length?editions.map(([day,ids])=>`<div class="edition"><strong>${esc(day)}</strong>${ids.map((id,i)=>`<span>${i+1}. ${esc(puzzles.get(id).country)}${puzzles.get(id).archived?' · Needs replacement':''}</span>`).join('')}<button class="button ghost small" data-player-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview as player</button><button class="button ghost small" data-preview-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Playtest game</button><button class="button ghost small" data-unschedule="${day}">Return game to queue</button></div>`).join(''):'<p class="small-copy">No games scheduled yet.</p>';
   }
   function saveDaily() { if(game?.mode==='daily')try{localStorage.setItem(DAILY_KEY,JSON.stringify(game));}catch{} }
   function startPlayerPreview(ids,date=L.today()) {
@@ -139,7 +139,7 @@
   }
   function startDaily(previewDate) {
     const day=publicPlayer?L.today():(previewDate||L.today()),ids=plan.schedule[day];
-    if(!ids || ids.length!==3 || ids.some(id=>!puzzles.has(id)||puzzles.get(id).archived)){game=null;$('game-empty').hidden=false;$('game-content').hidden=true;$('game-mode').textContent='DAILY EDITION';$('game-progress').textContent=day;return;}
+    if(!ids || ids.length!==3 || ids.some(id=>!puzzles.has(id)||puzzles.get(id).archived)){game=null;$('game-empty').hidden=false;$('game-content').hidden=true;$('game-mode').textContent='DAILY GAME';$('game-progress').textContent=day;return;}
     $('game-empty').hidden=true;$('game-content').hidden=false;
     let saved;try{saved=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');}catch{}
     const valid=saved?.date===day&&JSON.stringify(saved.ids)===JSON.stringify(ids)&&Number.isInteger(saved.round)&&saved.round>=0&&saved.round<=ids.length&&Array.isArray(saved.rounds)&&saved.rounds.length===ids.length&&saved.rounds.every(r=>Array.isArray(r.guesses)&&r.guesses.length<=5&&new Set(r.guesses).size===r.guesses.length&&r.guesses.every(id=>countries.has(id))&&typeof r.revealed==='boolean');
@@ -147,9 +147,15 @@
   }
   function renderGame() {
     if(!game)return;$('game-empty').hidden=true;$('game-content').hidden=false;
-    $('game-mode').textContent=game.mode==='playtest'?'CURATOR PLAYTEST':'DAILY EDITION · '+game.date;
-    const done=game.round>=game.ids.length,score=game.ids.reduce((sum,id,i)=>sum+L.roundScore(puzzles.get(id),game.rounds[i].guesses),0);
-    $('game-progress').textContent=(done?'Edition complete':'Puzzle '+(game.round+1)+' / '+game.ids.length)+' · '+fmt(score)+' points';
+    $('game-mode').textContent=game.mode==='playtest'?'CURATOR PLAYTEST':(game.mode==='player-preview'?'PLAYER PREVIEW':'DAILY GAME')+' · '+game.date;
+    const done = game.round >= game.ids.length;
+    const score = game.ids.reduce((sum, id, index) => {
+      const puzzle = puzzles.get(id);
+      const guesses = game.rounds[index].guesses;
+      const points = L.roundScore(puzzle, guesses);
+      return sum + (points || (done ? L.proximityScore(guesses, D.feedback[puzzle.countryId]) : 0));
+    }, 0);
+    $('game-progress').textContent = done ? 'Game complete' : 'Puzzle '+(game.round+1)+' / '+game.ids.length+' · '+fmt(score)+' points';
     $('game-clues').hidden=done;document.querySelector('.guess-layout').hidden=done;document.querySelector('.game-title').hidden=done;
     if(done){$('site-photo-attribution').hidden=false;$('round-result').hidden=false;$('round-result').innerHTML=`<div><p class="eyebrow">RESULT</p><h2>${fmt(score)} / ${fmt(game.ids.length*5000)} points</h2><p>${game.ids.map(id=>esc(puzzles.get(id).country)).join(' · ')}</p></div>${publicPlayer?'<p>Next game tomorrow.</p>':'<button class="button" data-view="curate">Back to curator desk</button>'}`;return;}
     const p=puzzles.get(game.ids[game.round]),r=game.rounds[game.round],won=r.guesses.at(-1)===p.countryId,ended=won||r.revealed||r.guesses.length>=5;
@@ -193,7 +199,7 @@
       $('trail-heading').textContent = 'Direction';
     }
     $('round-result').hidden=!ended;
-    if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${fmt(L.roundScore(p,r.guesses))} points · ${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See edition result':'Next country'}</button>`}</div>`;}
+    if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${won?fmt(L.roundScore(p,r.guesses))+' points · ':''}${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See results':'Next country'}</button>`}</div>`;}
     saveDaily();
   }
   const aliases={'usa':'USA','us':'USA','united states':'USA','america':'USA','uk':'GBR','britain':'GBR','great britain':'GBR','south korea':'KOR','north korea':'PRK','czechia':'CZE','ivory coast':'CIV','east timor':'TLS'};
@@ -228,7 +234,7 @@
     $('schedule-start').value=L.addDays(L.today(),1);$('schedule-start').min=L.today();
     $('schedule-button').addEventListener('click',()=>{
       if($('schedule-start').value<L.today()){toast('Choose today or a future date.');return;}
-      try {const result=L.scheduleQueue(plan,$('schedule-start').value);plan=result.plan;persist();toast(result.editions+' daily '+(result.editions===1?'edition':'editions')+' scheduled.');}catch(e){toast(e.message);}
+      try {const result=L.scheduleQueue(plan,$('schedule-start').value);plan=result.plan;persist();toast(result.editions+' daily '+(result.editions===1?'game':'games')+' scheduled.');}catch(e){toast(e.message);}
     });
     $('export-button').addEventListener('click',()=>{
       const exported={...plan,exportedAt:new Date().toISOString(),bankBuiltAt:D.builtAt};
@@ -245,7 +251,7 @@
     if(target.dataset.filter){filter=target.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===filter);b.setAttribute('aria-pressed',String(b.dataset.filter===filter));});renderBank();}
     if(target.dataset.action){const {action,id}=target.dataset;if(!puzzles.has(id))return;if(action==='preview-user'){startPlayerPreview([id]);}if(action==='playtest'){$('detail-dialog').close();startPlaytest(id);}if(action==='review')review(id);if(action==='approve'){approve(id);if($('detail-dialog').open)$('detail-dialog').close();if(game&&view==='game')renderGame();}if(action==='reject'){reject(id);if($('detail-dialog').open)$('detail-dialog').close();}}
     if(target.dataset.queue){const i=Number(target.dataset.position);if(!Number.isInteger(i)||i<0||i>=plan.queue.length)return;const action=target.dataset.queue;if(action==='remove')plan.queue.splice(i,1);else{const j=i+(action==='up'?-1:1);if(j>=0&&j<plan.queue.length)[plan.queue[i],plan.queue[j]]=[plan.queue[j],plan.queue[i]];}persist();}
-    if(target.dataset.unschedule){const ids=plan.schedule[target.dataset.unschedule];if(ids){delete plan.schedule[target.dataset.unschedule];plan.queue.push(...ids);persist();toast('Edition returned to the queue.');}}
+    if(target.dataset.unschedule){const ids=plan.schedule[target.dataset.unschedule];if(ids){delete plan.schedule[target.dataset.unschedule];plan.queue.push(...ids);persist();toast('Game returned to the queue.');}}
     if(target.dataset.playerEdition&&!publicPlayer)startPlayerPreview(plan.schedule[target.dataset.playerEdition],target.dataset.playerEdition);
     if(target.dataset.previewEdition&&!publicPlayer){showView('game');startDaily(target.dataset.previewEdition);}
     if(target.dataset.country)chooseCountry(target.dataset.country);

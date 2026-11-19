@@ -32,12 +32,11 @@ player = player.replace('href="#curate" data-view="curate" aria-label="natGuessr
                         'href="./" aria-label="natGuessr Beta"')
 player = player.replace('nat<span>Guessr</span></a>', 'nat<span>Guessr</span><small>Beta</small></a>')
 player = re.sub(r'<nav aria-label="Main">.*?</nav>',
-                '<nav aria-label="Main"><a class="nav-button" href="../../">Games</a></nav>', player)
+                '<nav aria-label="Main"></nav>', player)
 player = re.sub(r'    <section id="(?:curate|queue)-view".*?</section>\n', '', player, flags=re.S)
 player = re.sub(r'  <dialog id="detail-dialog".*?</dialog>\n', '', player)
 player = re.sub(r'<button id="game-back".*?</button>', '', player)
-player = player.replace('No edition scheduled for today.', 'No edition available today.')
-player = player.replace('<p>Build a daily edition from three approved sets in your queue.</p>'
+player = player.replace('<p>Schedule a game using three approved sets in your queue.</p>'
                         '<button data-view="queue" class="button primary">Open the queue</button>',
                         '<p>Check back for the next daily game.</p>')
 player = re.sub(r'<h3>Curate</h3>.*?(?=<h3>Evidence, not certainty</h3>)', '', player)
@@ -46,6 +45,7 @@ bank = '<script src="data.js"></script>'
 versioned_assets(player.replace(bank, ''), root / 'daily/index.html')
 
 preview = player.replace('data-mode="public"', 'data-mode="preview"').replace(edition, '')
-preview = preview.replace('<a class="nav-button" href="../../">Games</a>',
-                          '<a id="exit-player-preview" class="nav-button" href="../">Exit player preview</a>')
+preview = preview.replace('<nav aria-label="Main"></nav>',
+                          '<nav aria-label="Main"><a id="exit-player-preview" class="nav-button" href="../">'
+                          'Exit player preview</a></nav>')
 versioned_assets(preview, curator / 'preview/index.html')

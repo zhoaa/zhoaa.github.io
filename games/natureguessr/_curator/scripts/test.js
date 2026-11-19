@@ -68,4 +68,17 @@ L.validatePlan(repeated.plan,ids);
 assert.equal(L.roundScore(D.puzzles[0],[D.puzzles[0].countryId]),5000);
 assert.equal(L.roundScore(D.puzzles[0],['USA',D.puzzles[0].countryId]),4000);
 assert.equal(L.roundScore(D.puzzles[0],['USA']),0);
+const misses = ['border', 'near', 'far', 'farther', 'furthest'];
+const proximity = {
+  border: {km: 0, touching: true},
+  near: {km: 123},
+  far: {km: 800},
+  farther: {km: 2400},
+  furthest: {km: 9000},
+};
+assert.equal(L.proximityScore(misses.slice(0, 4), proximity), 0);
+assert.equal(L.proximityScore(misses, proximity), 500);
+assert.equal(L.proximityScore(misses, {...proximity, border: {km: 799}}), 424);
+assert.equal(L.proximityScore(misses, {...proximity, border: {km: 799}, near: {km: 800}}), 1);
+assert.equal(L.proximityScore(misses, {...proximity, border: {km: 800}, near: {km: 800}}), 0);
 console.log(`Passed: ${D.puzzles.length} unique-country sets, ${D.countries.length} country entities, licensing/source filters, border feedback, curation validation, calendar scheduling, and scoring.`);
