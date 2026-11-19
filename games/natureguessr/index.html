@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#153f32">
-  <title>NatureGuessr · Curator desk</title>
-  <link rel="stylesheet" href="styles.css?v=4a93e8a85d">
+  <title>natGuessr · Curator desk</title>
+  <link rel="stylesheet" href="styles.css?v=d02bff30af">
 </head>
 <body>
   <header class="site-header">
-    <a class="wordmark" href="#curate" data-view="curate" aria-label="NatureGuessr curator desk"><span class="brand-mark" aria-hidden="true">n.</span>Nature<span>Guessr</span></a>
+    <a class="wordmark" href="#curate" data-view="curate" aria-label="natGuessr curator desk"><span class="brand-mark" aria-hidden="true">n.</span>nat<span>Guessr</span></a>
     <nav aria-label="Main"><button data-view="curate" class="nav-button active">Curator desk</button><button data-view="queue" class="nav-button">Queue <span id="queue-count">0</span></button><a href="daily/" class="nav-button">Daily game</a></nav>
     <button id="help-button" class="text-button">How it works</button>
   </header>
@@ -36,12 +36,12 @@
       </div>
     </section>
   </main>
-  <footer><span>NatureGuessr</span><span>Observations &amp; photos: <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist contributors</a> · CC0 / CC BY only</span></footer>
+  <footer><span>natGuessr</span><span id="site-photo-attribution">Observations &amp; photos: <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist contributors</a> · CC0 / CC BY only</span></footer>
   <div id="win-celebration" class="win-celebration" aria-hidden="true"></div>
   <div id="toast" class="toast" role="status" hidden></div>
   <dialog id="detail-dialog"><div class="dialog-heading"><div><p class="eyebrow">CANDIDATE REVIEW</p><h2 id="detail-title"></h2></div><button class="close-button" data-close-dialog aria-label="Close review">×</button></div><div id="detail-body"></div></dialog>
   <dialog id="photo-dialog" class="photo-dialog"><button class="close-button" data-close-dialog aria-label="Close photo">×</button><img id="full-photo" alt=""><div id="full-photo-credit"></div></dialog>
   <dialog id="help-dialog"><div class="dialog-heading"><h2>How to play</h2><button class="close-button" data-close-dialog aria-label="Close instructions">×</button></div><div class="help-content"><h3>Play</h3><p>Guess the country shared by a bird, mammal, reptile or amphibian, plant, and fungus. You have five guesses. Species names are hidden for your first two guesses and appear before your third. They also appear when the round ends. Wrong guesses show distance between borders and a compass toward the answer.</p><p>Distance boxes are color-coded from blue (cold/far) to red (hot/near). Green means the correct country.</p><ul class="distance-legend"><li class="distance-cold">Blue: 5,000 km or more</li><li class="distance-cool">Teal: 2,000–4,999 km</li><li class="distance-warm">Gold: 800–1,999 km</li><li class="distance-hot">Orange: 200–799 km</li><li class="distance-near">Red: under 200 km</li></ul><p>Distance is measured approximately between the closest borders, including islands. Countries sharing a border show “Borders touch”; the compass points toward that border. Each unused guess is worth 1,000 points, up to 5,000 per puzzle.</p><h3>Curate</h3><p>Review each set’s source queries and modeled country support. Playtest before adding it to the approved queue. Schedule complete groups of three for future dates, then export your curation for backup or later publishing.</p><h3>Evidence, not certainty</h3><p>“Unique” means only one country in our modeled range index supports all five species. Models can omit real occurrences, and borders are approximate. It is not a claim that the five species cannot occur elsewhere.</p><p>Photos and observation data are selected using a country-level iNaturalist place filter and CC0 or CC BY licenses. Each photo retains its credit, license, and source. Thumbnails are cropped to fit; click any image to see it uncropped.</p><p><a href="https://www.inaturalist.org/pages/range_maps" target="_blank" rel="noopener noreferrer">Range models: iNaturalist, CC BY</a> · Boundaries: Natural Earth, public domain.</p></div></dialog>
-  <script src="data.js?v=081a645849"></script><script src="published-schedule.js?v=25fc5a450b"></script><script src="logic.js?v=4a248269c2"></script><script src="app.js?v=ea74b91e5a"></script>
+  <script src="data.js?v=081a645849"></script><script src="published-schedule.js?v=25fc5a450b"></script><script src="logic.js?v=3008c792aa"></script><script src="app.js?v=475a133ca2"></script>
 </body>
 </html>

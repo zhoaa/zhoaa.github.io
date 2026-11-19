@@ -12,7 +12,7 @@
   function validDate(day) { return /^\d{4}-\d{2}-\d{2}$/.test(day) && !isNaN(Date.parse(day+'T12:00:00Z')) && new Date(day+'T12:00:00Z').toISOString().slice(0,10)===day; }
   function emptyPlan() { return {version:1,approved:[],rejected:[],queue:[],schedule:{}}; }
   function validatePlan(value, puzzleIds) {
-    if (!value || value.version!==1 || !Array.isArray(value.approved) || !Array.isArray(value.rejected) || !Array.isArray(value.queue) || !value.schedule || typeof value.schedule!=='object' || Array.isArray(value.schedule)) throw new Error('This is not a NatureGuessr curation file.');
+    if (!value || value.version!==1 || !Array.isArray(value.approved) || !Array.isArray(value.rejected) || !Array.isArray(value.queue) || !value.schedule || typeof value.schedule!=='object' || Array.isArray(value.schedule)) throw new Error('This is not a natGuessr curation file.');
     const known = new Set(puzzleIds);
     for (const key of ['approved','rejected','queue']) {
       if (value[key].some(id=>!known.has(id)) || new Set(value[key]).size!==value[key].length) throw new Error('The curation contains unknown or duplicate puzzles.');

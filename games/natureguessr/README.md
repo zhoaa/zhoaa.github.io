@@ -1,4 +1,4 @@
-# NatureGuessr — curator prototype
+# natGuessr — curator prototype
 
 Run `npm run dev` from the repository root and open `/games/natureguessr/`. This is a normal standalone HTML/CSS/JS app; it also opens directly from `index.html`. It does not depend on the chat visualization renderer. Fonts and openly licensed observation photographs load from their original providers.
 
@@ -89,3 +89,5 @@ Guess history shows a right-aligned, color-coded distance box with no approximat
 Species-card name rows, scientific-name rows, and attribution dividers align across the grid, including after font loading and responsive resizing. In player views, common and scientific names are censored until two valid guesses have been submitted (before guess three), or until the round ends. The same rule covers zoom-dialog titles, image alt text, and zoom-button labels; curator evidence views retain the names.
 
 Typography uses fluid viewport-relative sizes with readable minimums and card-container-relative text sizing. Photo grids reflow from five to three, two, or one column as space narrows. Inputs retain at least the browser's base text size; text respects browser font settings. Layout checks at 320, 390, 768, and 1440 CSS pixels confirmed no horizontal overflow and equal card heights/divider positions.
+
+At window widths of 1100px and below, the composition centers the brand, game text, controls, feedback, results, and card groups. Partial rows are centered, including a lone fifth card on mobile. Poster/copyright/license details in player views are deferred until a win or five misses, including in photo popups; post-round source links are full-width green “See Observation ↗” buttons. Curator evidence retains attribution. The visible brand is natGuessr; existing URLs, storage keys, and exported-plan compatibility are preserved.

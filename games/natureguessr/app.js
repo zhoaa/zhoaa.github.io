@@ -37,19 +37,21 @@
   }
   function showView(next) {
     view=next;
+    $('site-photo-attribution').hidden=next==='game'||next==='daily';
     for(const id of ['curate','queue','game'])$(id+'-view').hidden=id!==(next==='daily'?'game':next);
     document.querySelectorAll('.nav-button').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
-    document.title='NatureGuessr · '+({curate:'Curator desk',queue:'Approved queue',daily:'Daily game',game:'Playtest'}[next]||'Daily game');
+    document.title='natGuessr · '+({curate:'Curator desk',queue:'Approved queue',daily:'Daily game',game:'Playtest'}[next]||'Daily game');
     if(next==='daily')startDaily();if(next==='queue')renderQueue();window.scrollTo({top:0,behavior:'instant'});
   }
   function licenseLink(code) { return code==='cc0'?'https://creativecommons.org/publicdomain/zero/1.0/':'https://creativecommons.org/licenses/by/4.0/'; }
   function licenseName(code) { return code==='cc0'?'CC0':'CC BY 4.0'; }
   function creditHtml(c, showObservation=true) {
+    if(!showObservation)return '';
     const o=c.observation,p=o.photo;
-    return `<p>Posted by <a href="https://www.inaturalist.org/people/${encodeURIComponent(o.observer)}" target="_blank" rel="noopener noreferrer">${esc(o.observerName||o.observer)}</a></p><p>${esc(p.attribution)}</p><div class="photo-license"><a href="${licenseLink(p.license)}" target="_blank" rel="noopener noreferrer">${licenseName(p.license)}</a>${showObservation?`<a href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">Observation</a>`:''}</div>`;
+    return `<p>Posted by <a href="https://www.inaturalist.org/people/${encodeURIComponent(o.observer)}" target="_blank" rel="noopener noreferrer">${esc(o.observerName||o.observer)}</a></p><p>${esc(p.attribution)}</p><div class="photo-license"><a href="${licenseLink(p.license)}" target="_blank" rel="noopener noreferrer">${licenseName(p.license)}</a><a class="observation-button" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">See Observation <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a></div>`;
   }
   function photoCards(p, showObservation=true, revealNames=true) {
-    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-observation-visible="${showObservation}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'} posted by ${esc(c.observation.observer)}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="censored" aria-label="Species name hidden">██████████</span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="censored" aria-label="Scientific name hidden">████ ███████</span>'}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
+    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-observation-visible="${showObservation}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'}${showObservation?' posted by '+esc(c.observation.observer):''}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="censored" aria-label="Species name hidden">██████████</span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="censored" aria-label="Scientific name hidden">████ ███████</span>'}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
   }
   function alignPhotoRows(container) {
     const grids=container.matches?.('.photo-grid')?[container]:[...container.querySelectorAll('.photo-grid')];
@@ -125,8 +127,9 @@
     const done=game.round>=game.ids.length,score=game.ids.reduce((sum,id,i)=>sum+L.roundScore(puzzles.get(id),game.rounds[i].guesses),0);
     $('game-progress').textContent=(done?'Edition complete':'Puzzle '+(game.round+1)+' / '+game.ids.length)+' · '+fmt(score)+' points';
     $('game-clues').hidden=done;document.querySelector('.guess-layout').hidden=done;document.querySelector('.game-title').hidden=done;
-    if(done){$('round-result').hidden=false;$('round-result').innerHTML=`<div><p class="eyebrow">RESULT</p><h2>${fmt(score)} / ${fmt(game.ids.length*5000)} points</h2><p>${game.ids.map(id=>esc(puzzles.get(id).country)).join(' · ')}</p></div>${publicPlayer?'<p>Next game tomorrow.</p>':'<button class="button" data-view="curate">Back to curator desk</button>'}`;return;}
+    if(done){$('site-photo-attribution').hidden=false;$('round-result').hidden=false;$('round-result').innerHTML=`<div><p class="eyebrow">RESULT</p><h2>${fmt(score)} / ${fmt(game.ids.length*5000)} points</h2><p>${game.ids.map(id=>esc(puzzles.get(id).country)).join(' · ')}</p></div>${publicPlayer?'<p>Next game tomorrow.</p>':'<button class="button" data-view="curate">Back to curator desk</button>'}`;return;}
     const p=puzzles.get(game.ids[game.round]),r=game.rounds[game.round],won=r.guesses.at(-1)===p.countryId,ended=won||r.revealed||r.guesses.length>=5;
+    $('site-photo-attribution').hidden=!ended;
     $('game-clues').innerHTML=photoCards(p,ended,ended||r.guesses.length>=2);installPhotoFallbacks($('game-clues'));alignPhotoRows($('game-clues'));
     $('country-input').value='';selectedCountry=null;closeOptions();$('guess-error').textContent='';
     $('country-input').disabled=ended;$('guess-form').querySelector('button[type=submit]').disabled=ended;
@@ -179,7 +182,7 @@
   });
   $('export-button').addEventListener('click',()=>{
     const exported={...plan,exportedAt:new Date().toISOString(),bankBuiltAt:D.builtAt};
-    const url=URL.createObjectURL(new Blob([JSON.stringify(exported,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='natureguessr-curation-'+L.today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(new Blob([JSON.stringify(exported,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='natguessr-curation-'+L.today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   });
   $('import-file').addEventListener('change',async event=>{
     const file=event.target.files[0];if(!file)return;
@@ -205,6 +208,6 @@
   renderBank();renderQueue();
   let playerPreview=null;
   if(publicPlayer){try{const token=new URLSearchParams(location.search).get('preview'),saved=JSON.parse(sessionStorage.getItem('natureguessr-player-preview')||'null');if(token&&saved?.token===token&&Date.now()-saved.createdAt<86400000&&Array.isArray(saved.ids)&&saved.ids.length>0&&saved.ids.length<=3&&saved.ids.every(id=>puzzles.has(id)&&!puzzles.get(id).archived))playerPreview=saved;}catch{}}
-  if(playerPreview){showView('game');$('exit-player-preview').hidden=false;game={mode:'player-preview',date:playerPreview.date||L.today(),ids:playerPreview.ids,round:0,rounds:playerPreview.ids.map(()=>({guesses:[],revealed:false}))};renderGame();document.title='NatureGuessr · Player preview';}
+  if(playerPreview){showView('game');$('exit-player-preview').hidden=false;game={mode:'player-preview',date:playerPreview.date||L.today(),ids:playerPreview.ids,round:0,rounds:playerPreview.ids.map(()=>({guesses:[],revealed:false}))};renderGame();document.title='natGuessr · Player preview';}
   else showView(publicPlayer?'daily':'curate');
 })();
