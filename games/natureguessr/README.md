@@ -87,3 +87,5 @@ Guess history shows a right-aligned, color-coded distance box with no approximat
 `build_player.py` versions application assets by content hash to prevent stale CSS/JavaScript after deployment; publishing a curation automatically rebuilds those references.
 
 Species-card name rows, scientific-name rows, and attribution dividers align across the grid, including after font loading and responsive resizing. In player views, common and scientific names are censored until two valid guesses have been submitted (before guess three), or until the round ends. The same rule covers zoom-dialog titles, image alt text, and zoom-button labels; curator evidence views retain the names.
+
+Typography uses fluid viewport-relative sizes with readable minimums and card-container-relative text sizing. Photo grids reflow from five to three, two, or one column as space narrows. Inputs retain at least the browser's base text size; text respects browser font settings. Layout checks at 320, 390, 768, and 1440 CSS pixels confirmed no horizontal overflow and equal card heights/divider positions.
