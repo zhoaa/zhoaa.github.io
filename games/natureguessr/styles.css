@@ -154,6 +154,7 @@ dialog.photo-dialog {
 
 .round-result.game-results {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   max-width: 100%;
   margin: 0;
@@ -295,4 +296,62 @@ dialog.photo-dialog {
 }
 @media (max-width: 520px) {
   .help-example { grid-template-columns: 1fr; }
+}
+
+main:has(.game-results:not([hidden])) {
+  width: 100%;
+  max-width: none;
+  padding-inline: 0;
+}
+main:has(.game-results:not([hidden])) .game-topline {
+  padding-inline: clamp(1rem, 3vw, 3rem);
+}
+.game-results .results-header {
+  position: relative;
+  isolation: isolate;
+  min-height: clamp(11rem, 25vw, 19rem);
+  padding-inline: clamp(1rem, 6vw, 6rem);
+  border-radius: 0;
+}
+.results-backdrop {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.results-backdrop img {
+  position: absolute;
+  inset: -15%;
+  width: 130%;
+  height: 130%;
+  object-fit: cover;
+  opacity: 0;
+}
+.results-backdrop img:first-child { opacity: .3; }
+.game-results .results-rounds,
+.game-results .results-copy-status,
+.game-results textarea {
+  margin-inline: clamp(.6rem, 2vw, 2rem);
+}
+.game-results textarea { width: auto; }
+.results-round-body .photo-button { aspect-ratio: 1; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .results-backdrop:not(.results-backdrop-static) img {
+    animation: results-photo-cycle 36s linear var(--photo-delay) infinite;
+  }
+  .results-backdrop-static img {
+    animation: results-photo-drift 16s ease-in-out infinite alternate;
+  }
+}
+@keyframes results-photo-cycle {
+  0% { opacity: 0; transform: rotate(-3deg) scale(1); }
+  5%, 28% { opacity: .3; }
+  38% { opacity: 0; transform: rotate(3deg) scale(1.08); }
+  100% { opacity: 0; }
+}
+@keyframes results-photo-drift {
+  from { transform: rotate(-3deg) scale(1); }
+  to { transform: rotate(3deg) scale(1.08); }
 }

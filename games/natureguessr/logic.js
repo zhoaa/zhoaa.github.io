@@ -64,13 +64,17 @@
   function roundScore(puzzle, guesses) { return guesses.length && guesses[guesses.length-1]===puzzle.countryId ? Math.max(0,6000-1000*guesses.length) : 0; }
   function proximityScore(guesses, feedback) {
     if (guesses.length < 5) return 0;
-    const veryCloseLimit = distanceBands.find(band => band.tone === 'close').minimum;
+    const closeStart = distanceBands.find(band => band.tone === 'close').minimum;
     return Math.max(0, ...guesses.map(id => {
       const result = feedback[id];
       if (!result) return 0;
-      if (result.touching) return 500;
-      if (result.km >= veryCloseLimit) return 0;
-      return 500 - Math.floor(result.km * 500 / veryCloseLimit);
+      const { tone } = distanceBand(result);
+      if (tone === 'borders') return 500;
+      if (tone === 'very-close') {
+        return Math.max(101, 499 - Math.floor(398 * result.km / (closeStart - 1)));
+      }
+      if (tone === 'close') return Math.max(0, 100 - Math.floor(result.km - closeStart));
+      return 0;
     }));
   }
   return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,scheduleQueue,roundScore,proximityScore};

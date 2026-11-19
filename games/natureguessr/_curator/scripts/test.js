@@ -78,7 +78,9 @@ const proximity = {
 };
 assert.equal(L.proximityScore(misses.slice(0, 4), proximity), 0);
 assert.equal(L.proximityScore(misses, proximity), 500);
-assert.equal(L.proximityScore(misses, {...proximity, border: {km: 799}}), 424);
-assert.equal(L.proximityScore(misses, {...proximity, border: {km: 799}, near: {km: 800}}), 1);
-assert.equal(L.proximityScore(misses, {...proximity, border: {km: 800}, near: {km: 800}}), 0);
+assert.equal(L.proximityScore(misses, {...proximity, border: {km: 799}}), 438);
+const pointsAt = km => L.proximityScore(misses, {...proximity, border: {km}, near: {km: 2000}, far: {km: 2000}});
+for (const [km, points] of [[0,499],[400,300],[799,101],[800,100],[873,27],[900,0],[1999,0],[2000,0]]) {
+  assert.equal(pointsAt(km), points, `partial score at ${km} km`);
+}
 console.log(`Passed: ${D.puzzles.length} unique-country sets, ${D.countries.length} country entities, licensing/source filters, border feedback, curation validation, calendar scheduling, and scoring.`);

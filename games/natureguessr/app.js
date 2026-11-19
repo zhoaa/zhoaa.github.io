@@ -181,6 +181,12 @@
     results.hidden = false;
     results.innerHTML = `
       <header class="results-header">
+        <div class="results-backdrop${rounds.length === 1 ? ' results-backdrop-static' : ''}" aria-hidden="true">
+          ${rounds.map(({ puzzle }, index) => `
+            <img src="${esc(puzzle.clues[0].observation.photo.url)}" alt="" decoding="async"
+              style="--photo-delay: ${index * 12 - 2}s">
+          `).join('')}
+        </div>
         <div>
           <h2 id="results-title" tabindex="-1">Your ${preview ? 'preview' : 'daily'} score</h2>
           <p class="results-score"><strong>${fmt(total)}</strong> / ${fmt(rounds.length * 5000)} points</p>
@@ -190,16 +196,16 @@
       <p id="copy-score-status" class="results-copy-status" role="status" hidden></p>
       <textarea id="share-score-text" aria-label="Score to copy" rows="7" readonly hidden></textarea>
       <div class="results-rounds">
-        ${entries.map(({ label, puzzle, guesses, points, won, trail }) => `
-          <details class="results-round">
+        ${entries.map(({ label, puzzle, guesses, points, won, trail }, index) => `
+          <details class="results-round"${index === 0 ? ' open' : ''}>
             <summary>
               <span><small>${label}</small><strong>${esc(puzzle.country)}</strong></span>
               <span class="results-trail" aria-hidden="true">${trail}</span>
               <span class="results-round-points">${fmt(points)} pts</span>
             </summary>
             <div class="results-round-body">
-              <ol class="guess-history" aria-label="${label} guesses">${guessHistory(puzzle, guesses)}</ol>
               <div class="photo-grid" aria-label="${label} observations">${photoCards(puzzle, true, true, won)}</div>
+              <ol class="guess-history" aria-label="${label} guesses">${guessHistory(puzzle, guesses)}</ol>
             </div>
           </details>`).join('')}
       </div>
@@ -207,7 +213,8 @@
         !preview ? '<button class="button" data-view="curate">Back to curator desk</button>' : ''}
     `;
 
-    installPhotoFallbacks(results);
+    installPhotoFallbacks(results.querySelector('.results-rounds'));
+    alignPhotoRows(results);
     results.querySelectorAll('details').forEach(round => {
       round.addEventListener('toggle', () => {
         if (round.open) alignPhotoRows(round);
