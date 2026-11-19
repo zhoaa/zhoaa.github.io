@@ -48,9 +48,21 @@
     const o=c.observation,p=o.photo;
     return `<p>Posted by <a href="https://www.inaturalist.org/people/${encodeURIComponent(o.observer)}" target="_blank" rel="noopener noreferrer">${esc(o.observerName||o.observer)}</a></p><p>${esc(p.attribution)}</p><div class="photo-license"><a href="${licenseLink(p.license)}" target="_blank" rel="noopener noreferrer">${licenseName(p.license)}</a>${showObservation?`<a href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">Observation</a>`:''}</div>`;
   }
-  function photoCards(p, showObservation=true) {
-    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-observation-visible="${showObservation}" aria-label="Zoom in on ${esc(c.name)}"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)} observed by ${esc(c.observation.observer)}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${esc(c.name)}</h3><p class="scientific">${esc(c.scientific)}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
+  function photoCards(p, showObservation=true, revealNames=true) {
+    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-observation-visible="${showObservation}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'} posted by ${esc(c.observation.observer)}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="censored" aria-label="Species name hidden">██████████</span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="censored" aria-label="Scientific name hidden">████ ███████</span>'}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
   }
+  function alignPhotoRows(container) {
+    const grids=container.matches?.('.photo-grid')?[container]:[...container.querySelectorAll('.photo-grid')];
+    for(const grid of grids){
+      if(!grid.getBoundingClientRect().width)continue;
+      grid.style.removeProperty('--name-row');grid.style.removeProperty('--scientific-row');
+      const names=[...grid.querySelectorAll('.photo-info h3')],scientific=[...grid.querySelectorAll('.photo-info .scientific')];
+      grid.style.setProperty('--name-row',Math.ceil(Math.max(0,...names.map(e=>e.getBoundingClientRect().height)))+'px');
+      grid.style.setProperty('--scientific-row',Math.ceil(Math.max(0,...scientific.map(e=>e.getBoundingClientRect().height)))+'px');
+    }
+  }
+  window.addEventListener('resize',()=>requestAnimationFrame(()=>alignPhotoRows(document)));
+  document.fonts?.ready.then(()=>alignPhotoRows(document));
   function installPhotoFallbacks(container) {
     container.querySelectorAll('img').forEach(image=>image.addEventListener('error',()=>{const fallback=document.createElement('span');fallback.className='photo-error';fallback.textContent='Photo unavailable. The species name is shown below.';image.replaceWith(fallback);},{once:true}));
   }
@@ -72,7 +84,7 @@
   function review(id) {
     const p=puzzles.get(id);$('detail-title').textContent=p.country+' · '+p.id;
     $('detail-body').innerHTML=`<div class="photo-grid">${photoCards(p)}</div><section class="detail-evidence"><h3>Why this set was offered</h3><p>All five observation searches start with <strong>place_id=${p.placeId}</strong> (${esc(p.country)}). Their photo and observation licenses are individually restricted to CC0 or CC BY. Public coordinates and country tags are checked as safeguards after that country-first selection.</p><p><strong>Modeled country intersection: ${esc(p.country)} only.</strong> Every country with non-trivial modeled land overlap counts as supporting a species. The five country-support sets intersect in one country; they need not all occur at the same spot within it.</p><div class="table-wrap"><table class="evidence-table"><thead><tr><th>Clue</th><th>Country support in the model</th><th>Source & selection</th></tr></thead><tbody>${p.clues.map((c,i)=>`<tr><td>${esc(c.name)}<br><span class="scientific">${esc(c.scientific)}</span></td><td><details><summary>${c.supportedCountries.length} ${c.supportedCountries.length===1?'country':'countries'}</summary>${c.supportedCountries.map(id=>esc(countries.get(id)?.name||id)).join(', ')}</details></td><td><a href="${esc(c.observation.query)}" target="_blank" rel="noopener noreferrer">Country-filtered photo query</a><br><a href="${esc(c.rangeUrl)}" target="_blank" rel="noopener noreferrer">Modeled range</a><br><span class="small-copy">Observed ${esc(c.observation.date)} · ${esc(c.observation.location[1].toFixed(4))}, ${esc(c.observation.location[0].toFixed(4))}<br>Observation data: ${licenseName(c.observation.license)} · Model ${esc(c.modelVersion)}</span></td></tr>`).join('')}</tbody></table></div><p>Models are incomplete. A singleton in this index is not proof that no other country has these species. Check distribution surprises, identification quality, and whether common names give away the answer before approval.</p><details><summary>Upstream species-selection queries</summary><ul>${p.selectionQueries.map((q,i)=>`<li><a href="${esc(q)}" target="_blank" rel="noopener noreferrer">${esc(p.clues[i].category)} candidates · place_id=${p.placeId}</a></li>`).join('')}</ul></details><div class="review-actions"><button class="button secondary" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary" data-action="playtest" data-id="${p.id}">Playtest this set</button><button class="button primary" data-action="approve" data-id="${p.id}">Approve & queue</button><button class="button danger" data-action="reject" data-id="${p.id}">${status(id)==='rejected'?'Restore to unreviewed':'Reject this set'}</button></div></section>`;
-    installPhotoFallbacks($('detail-body'));$('detail-dialog').showModal();
+    installPhotoFallbacks($('detail-body'));$('detail-dialog').showModal();alignPhotoRows($('detail-body'));
   }
   function renderQueue() {
     if(publicPlayer)return;
@@ -115,7 +127,7 @@
     $('game-clues').hidden=done;document.querySelector('.guess-layout').hidden=done;document.querySelector('.game-title').hidden=done;
     if(done){$('round-result').hidden=false;$('round-result').innerHTML=`<div><p class="eyebrow">RESULT</p><h2>${fmt(score)} / ${fmt(game.ids.length*5000)} points</h2><p>${game.ids.map(id=>esc(puzzles.get(id).country)).join(' · ')}</p></div>${publicPlayer?'<p>Next game tomorrow.</p>':'<button class="button" data-view="curate">Back to curator desk</button>'}`;return;}
     const p=puzzles.get(game.ids[game.round]),r=game.rounds[game.round],won=r.guesses.at(-1)===p.countryId,ended=won||r.revealed||r.guesses.length>=5;
-    $('game-clues').innerHTML=photoCards(p,ended);installPhotoFallbacks($('game-clues'));
+    $('game-clues').innerHTML=photoCards(p,ended,ended||r.guesses.length>=2);installPhotoFallbacks($('game-clues'));alignPhotoRows($('game-clues'));
     $('country-input').value='';selectedCountry=null;closeOptions();$('guess-error').textContent='';
     $('country-input').disabled=ended;$('guess-form').querySelector('button[type=submit]').disabled=ended;
     $('guesses-left').textContent=ended?(won?'Country found':'Country revealed'):(5-r.guesses.length)+' guesses left';
@@ -183,7 +195,7 @@
     if(target.dataset.playerEdition&&!publicPlayer)startPlayerPreview(plan.schedule[target.dataset.playerEdition],target.dataset.playerEdition);
     if(target.dataset.previewEdition&&!publicPlayer){showView('game');startDaily(target.dataset.previewEdition);}
     if(target.dataset.country)chooseCountry(target.dataset.country);
-    if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=c.name+' · uncropped observation photo';$('full-photo-credit').innerHTML='<strong>'+esc(c.name)+'</strong><div>'+creditHtml(c,target.dataset.observationVisible==='true')+'</div>';$('photo-dialog').showModal();}}
+    if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('full-photo-credit').innerHTML='<strong>'+esc(target.dataset.nameVisible==='true'?c.name:'Observation photo')+'</strong><div>'+creditHtml(c,target.dataset.observationVisible==='true')+'</div>';$('photo-dialog').showModal();}}
     if(target.hasAttribute('data-close-dialog'))target.closest('dialog').close();
     if(target.id==='help-button')$('help-dialog').showModal();
     if(target.id==='next-round'&&game){game.round++;renderGame();window.scrollTo({top:0,behavior:'instant'});}

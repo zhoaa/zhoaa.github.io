@@ -85,3 +85,5 @@ Species cards have equal heights across all responsive rows. The zoom-in button 
 Guess history shows a right-aligned, color-coded distance box with no approximation symbol or temperature words. The color thresholds are explained only in How to play. Distances remain approximate boundary measurements despite their compact display.
 
 `build_player.py` versions application assets by content hash to prevent stale CSS/JavaScript after deployment; publishing a curation automatically rebuilds those references.
+
+Species-card name rows, scientific-name rows, and attribution dividers align across the grid, including after font loading and responsive resizing. In player views, common and scientific names are censored until two valid guesses have been submitted (before guess three), or until the round ends. The same rule covers zoom-dialog titles, image alt text, and zoom-button labels; curator evidence views retain the names.
