@@ -69,7 +69,6 @@
   function distanceBadge({ tone, label, icon }) {
     return `<span class="guess-distance distance-${tone}">${label}${icon ? ` <span aria-hidden="true">${icon}</span>` : ''}</span>`;
   }
-  $('distance-legend').innerHTML = L.distanceBands.map(band => `<li>${distanceBadge(band)}</li>`).join('');
 
   function alignPhotoRows(container) {
     const grids=container.matches?.('.photo-grid')?[container]:[...container.querySelectorAll('.photo-grid')];
@@ -245,7 +244,7 @@
     });
     const score = rounds.reduce((sum, round) => sum + round.points, 0);
     $('game-progress').hidden = done;
-    $('game-progress').textContent = done ? '' : 'Puzzle '+(game.round+1)+' / '+game.ids.length+' · '+fmt(score)+' points';
+    $('game-progress').textContent = done ? '' : 'Set '+(game.round+1)+' / '+game.ids.length+' · '+fmt(score)+' points';
     $('game-clues').hidden = done;
     document.querySelector('.guess-layout').hidden = done;
     document.querySelector('.game-title').hidden = done;
@@ -288,7 +287,7 @@
     if (feedback) {
       $('trail-heading').innerHTML = distanceBadge(L.distanceBand(feedback, won));
     } else {
-      $('trail-heading').textContent = 'Direction';
+      $('trail-heading').textContent = '???';
     }
     $('round-result').hidden=!ended;
     if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${won?fmt(L.roundScore(p,r.guesses))+' points · ':''}${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See results':'Next country'}</button>`}</div>`;}
@@ -359,4 +358,13 @@
   if(mode==='preview'){try{const token=new URLSearchParams(location.search).get('preview'),saved=JSON.parse(sessionStorage.getItem('natureguessr-player-preview')||'null');if(token&&saved?.token===token&&Date.now()-saved.createdAt<86400000&&Array.isArray(saved.ids)&&saved.ids.length>0&&saved.ids.length<=3&&saved.ids.every(id=>puzzles.has(id)&&!puzzles.get(id).archived))playerPreview=saved;}catch{}}
   if(playerPreview){showView('game');game={mode:'player-preview',date:playerPreview.date||L.today(),ids:playerPreview.ids,round:0,rounds:playerPreview.ids.map(()=>({guesses:[],revealed:false}))};renderGame();document.title='natGuessr Beta · Player preview';}
   else showView(publicPlayer?'daily':'curate');
+  if (publicPlayer) {
+    const helpKey = 'natguessr-help-seen-' + mode;
+    let seen = false;
+    try { seen = localStorage.getItem(helpKey) === '1'; } catch {}
+    if (!seen) {
+      $('help-dialog').showModal();
+      try { localStorage.setItem(helpKey, '1'); } catch {}
+    }
+  }
 })();

@@ -39,7 +39,6 @@ player = re.sub(r'<button id="game-back".*?</button>', '', player)
 player = player.replace('<p>Schedule a game using three approved sets in your queue.</p>'
                         '<button data-view="queue" class="button primary">Open the queue</button>',
                         '<p>Check back for the next daily game.</p>')
-player = re.sub(r'<h3>Curate</h3>.*?(?=<h3>Evidence, not certainty</h3>)', '', player)
 edition = '<script src="../daily/edition.js"></script>'
 bank = '<script src="data.js"></script>'
 versioned_assets(player.replace(bank, ''), root / 'daily/index.html')
