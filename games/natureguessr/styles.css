@@ -46,9 +46,17 @@ body{line-height:1.5}.photo-card{container-type:inline-size}.photo-grid{gap:clam
 /* Give the photo the space its credits will occupy when the round ends. */
 #game-clues .photo-button {
   --photo-ratio: 1.2;
-  height: calc(100cqi / var(--photo-ratio) + var(--photo-extra, 0px));
+  height: calc(100cqi / var(--photo-ratio));
 }
-#game-clues .credit-concealed {
+#game-clues .photo-card:has(.credit-concealed) .photo-button {
+  height: calc(100cqi / var(--photo-ratio) + var(--credit-row, 0px));
+}
+#game-clues .deferred-credit:not(.credit-concealed) {
+  min-height: var(--credit-row, 0px);
+}
+#game-clues .credit-concealed,
+#game-clues.measuring-credits .deferred-credit {
+  min-height: 0;
   flex: none;
   height: 0;
   overflow: hidden;
@@ -78,7 +86,6 @@ dialog.photo-dialog {
 .distance-close { background: #efe1ff; color: #6a3485; }
 .distance-very-close { background: #f9e1ed; color: #8a305e; }
 .distance-borders { background: #fbdede; color: #942b33; }
-#trail-heading > span + span { margin-left: .25rem; }
 
 .compass {
   position: relative;

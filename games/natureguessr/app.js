@@ -53,13 +53,17 @@
   }
   function licenseLink(code) { return code==='cc0'?'https://creativecommons.org/publicdomain/zero/1.0/':'https://creativecommons.org/licenses/by/4.0/'; }
   function licenseName(code) { return code==='cc0'?'CC0':'CC BY 4.0'; }
-  function creditHtml(c, showObservation=true) {
+  function creditHtml(c, showObservation, linkObserver) {
     const o=c.observation,p=o.photo;
-    const poster=`<p>Posted by <a href="https://www.inaturalist.org/people/${encodeURIComponent(o.observer)}" target="_blank" rel="noopener noreferrer">${esc(o.observerName||o.observer)}</a></p>`;
+    const observerName = esc(o.observerName || o.observer);
+    const observer = linkObserver
+      ? `<a href="https://www.inaturalist.org/people/${encodeURIComponent(o.observer)}" target="_blank" rel="noopener noreferrer">${observerName}</a>`
+      : observerName;
+    const poster = `<p>Posted by ${observer}</p>`;
     return poster+`<div class="deferred-credit${showObservation?'':' credit-concealed'}"${showObservation?'':' aria-hidden="true" inert'}><p>${esc(p.attribution)}</p><div class="photo-license"><a href="${licenseLink(p.license)}" target="_blank" rel="noopener noreferrer">${licenseName(p.license)}</a><a class="observation-button" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">See Observation <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a></div></div>`;
   }
-  function photoCards(p, showObservation=true, revealNames=true) {
-    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'}${showObservation?' posted by '+esc(c.observation.observer):''}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.name)+'</span><span class="censored" aria-label="Species name hidden">██████████</span></span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.scientific)+'</span><span class="censored" aria-label="Scientific name hidden">████ ███████</span></span>'}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
+  function photoCards(p, showObservation=true, revealNames=true, linkObserver=true) {
+    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'}${showObservation?' posted by '+esc(c.observation.observer):''}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.name)+'</span><span class="censored" aria-label="Species name hidden">██████████</span></span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.scientific)+'</span><span class="censored" aria-label="Scientific name hidden">████ ███████</span></span>'}</p><div class="photo-credit">${creditHtml(c,showObservation,linkObserver)}</div></div></article>`).join('');
   }
   function distanceBadge({ tone, label, icon }) {
     return `<span class="guess-distance distance-${tone}">${label}${icon ? ` <span aria-hidden="true">${icon}</span>` : ''}</span>`;
@@ -74,8 +78,11 @@
       const names=[...grid.querySelectorAll('.photo-info h3')],scientific=[...grid.querySelectorAll('.photo-info .scientific')];
       grid.style.setProperty('--name-row',Math.ceil(Math.max(0,...names.map(e=>e.getBoundingClientRect().height)))+'px');
       grid.style.setProperty('--scientific-row',Math.ceil(Math.max(0,...scientific.map(e=>e.getBoundingClientRect().height)))+'px');
-      for (const credit of grid.querySelectorAll('.credit-concealed')) {
-        credit.closest('.photo-card').style.setProperty('--photo-extra', credit.scrollHeight+'px');
+      if (grid.id === 'game-clues') {
+        grid.classList.add('measuring-credits');
+        const credits = [...grid.querySelectorAll('.deferred-credit')];
+        grid.style.setProperty('--credit-row', Math.max(0, ...credits.map(credit => credit.scrollHeight)) + 'px');
+        grid.classList.remove('measuring-credits');
       }
     }
   }
@@ -152,7 +159,7 @@
     const before = revealing && !matchMedia('(prefers-reduced-motion: reduce)').matches
       ? [...clues.querySelectorAll('.photo-button')].map(photo => photo.getBoundingClientRect().height)
       : [];
-    clues.innerHTML = photoCards(p, ended, ended || r.guesses.length >= 2);
+    clues.innerHTML = photoCards(p, ended, ended || r.guesses.length >= 2, won);
     installPhotoFallbacks(clues);
     alignPhotoRows(clues);
     if (before.length) {
@@ -175,14 +182,15 @@
         `<span class="compass mini-compass" role="img" aria-label="Direction ${L.direction(f.bearing)}"><i class="compass-needle" style="--bearing:${f.bearing}deg"></i><span aria-hidden="true">${L.direction(f.bearing)}</span></span>`;
       return `<li class="guess-row"><span class="guess-number">${i+1}</span><span class="guess-country">${esc(c.name)}</span>${distanceBadge(L.distanceBand(f, correct))}${marker}</li>`;
     }).join('');
-    const last=r.guesses.at(-1),f=last?D.feedback[p.countryId][last]:null;
-    $('trail-compass').querySelector('.compass-needle').style.setProperty('--bearing', (f?.bearing || 0) + 'deg');
-    if(won){$('trail-heading').textContent='Correct';$('trail-copy').textContent=p.country;}
-    else if(f){
-      $('trail-heading').innerHTML = distanceBadge(L.distanceBand(f)) + ' <span>' + L.direction(f.bearing) + '</span>';
-      $('trail-copy').textContent=f.touching?'Shared border with '+countries.get(last).name+'.':'From '+countries.get(last).name+' toward the nearest border.';
+    const feedback = D.feedback[p.countryId][r.guesses.at(-1)];
+    const compass = $('trail-compass');
+    compass.querySelector('.compass-needle').style.setProperty('--bearing', (feedback?.bearing || 0) + 'deg');
+    compass.setAttribute('aria-label', feedback && !won ? 'Direction ' + L.direction(feedback.bearing) : 'Compass');
+    if (feedback) {
+      $('trail-heading').innerHTML = distanceBadge(L.distanceBand(feedback, won));
+    } else {
+      $('trail-heading').textContent = 'Direction';
     }
-    else{$('trail-heading').textContent='Direction';$('trail-copy').textContent='Each guess shows how close you are and which way to go.';}
     $('round-result').hidden=!ended;
     if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${fmt(L.roundScore(p,r.guesses))} points · ${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See edition result':'Next country'}</button>`}</div>`;}
     saveDaily();
