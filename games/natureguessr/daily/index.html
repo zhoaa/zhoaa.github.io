@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#153f32">
   <title>natGuessr Beta · Daily game</title>
-  <link rel="stylesheet" href="../styles.css?v=823d5a2fc3">
+  <link rel="stylesheet" href="../styles.css?v=a32111b371">
 </head>
 <body data-mode="public">
   <header class="site-header">
@@ -33,12 +33,13 @@
       <button class="close-button" data-close-dialog aria-label="Close instructions" autofocus>×</button>
     </div>
     <div class="help-content">
-      <p>Guess the country each of these observations was made in! Every observation was made in the same country, but they may be from different locations. You have 5 guesses! Wrong guesses show how close you are and a compass pointing toward the answer. If you guess wrong twice, you can see the names of the species.</p>
+      <p><a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist</a> is a citizen science organization where anybody can submit observations of species! In natGuessr, you have to guess the country each of these 5 observations was made in! Every observation was made in the same country, but they may be from different locations. You have 5 guesses! Wrong guesses show how close you are and a compass pointing toward the answer. If you guess wrong twice, you can see the names of the species.</p>
       <figure class="help-example">
-        <div class="help-example-photo">
-          <a href="https://www.inaturalist.org/observations/79548371" target="_blank" rel="noopener noreferrer" title="View observation and photo credit on iNaturalist">
+        <div class="photo-card help-example-photo">
+          <a class="photo-button" href="https://www.inaturalist.org/observations/79548371" target="_blank" rel="noopener noreferrer" title="View observation and photo credit on iNaturalist">
             <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/130302279/medium.jpeg" alt="Mallard" width="176" height="176" loading="lazy">
           </a>
+          <div class="photo-info"><h3>Mallard</h3></div>
         </div>
         <ol class="help-example-guesses" aria-label="Example guesses">
           <li><span>Netherlands</span><span class="guess-distance distance-very-far">Very Far <span aria-hidden="true">🦗</span></span></li>

@@ -241,6 +241,7 @@ dialog.photo-dialog {
 #report-dialog { max-width: min(34rem, calc(100vw - 2rem)); }
 #report-dialog a { overflow-wrap: anywhere; }
 
+#help-dialog { max-width: min(49rem, calc(100% - 2rem)); }
 #help-dialog .dialog-heading {
   position: relative;
   justify-content: center;
@@ -250,7 +251,7 @@ dialog.photo-dialog {
   text-align: center;
 }
 #help-dialog .close-button { position: absolute; right: 0; }
-#help-dialog .help-content { text-align: center; }
+#help-dialog .help-content { margin-inline: auto; text-align: center; }
 .help-example {
   display: grid;
   grid-template-columns: 11rem minmax(0, 1fr);
@@ -265,21 +266,12 @@ dialog.photo-dialog {
 }
 .help-example-photo {
   width: min(11rem, 100%);
+  height: auto;
   justify-self: center;
-  border: 1px solid var(--line);
-  border-radius: .7rem;
-  background: var(--paper);
   box-shadow: 0 2px 8px #153f3214;
 }
-.help-example-photo a { display: block; border-radius: inherit; }
-.help-example-photo img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1;
-  border-radius: inherit;
-  object-fit: cover;
-}
+.help-example-photo .photo-button { aspect-ratio: 1; }
+.help-example-photo .photo-info { display: block; }
 .help-example-guesses {
   display: grid;
   gap: .3rem;
