@@ -239,3 +239,45 @@ dialog.photo-dialog {
 #report-button { margin-left: auto; padding: 0; }
 #report-dialog { max-width: min(34rem, calc(100vw - 2rem)); }
 #report-dialog a { overflow-wrap: anywhere; }
+
+.help-example {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  align-items: center;
+  gap: .75rem 1rem;
+  max-width: 29rem;
+  margin: 1rem 0;
+  padding: .8rem;
+  border: 1px solid var(--line);
+  border-radius: .65rem;
+  background: var(--paper);
+}
+.help-example-photo {
+  display: grid;
+  justify-items: center;
+  gap: .35rem;
+  text-align: center;
+}
+.help-example-photo img {
+  display: block;
+  border-radius: .4rem;
+  object-fit: cover;
+}
+.help-example-photo small { color: var(--muted); line-height: 1.35; }
+.help-example-guesses {
+  display: grid;
+  gap: .3rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.help-example-guesses li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .45rem;
+  font-size: .85rem;
+}
+@media (max-width: 420px) {
+  .help-example { grid-template-columns: 1fr; }
+}
