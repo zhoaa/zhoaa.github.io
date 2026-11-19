@@ -5,6 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   const normalize = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  function distanceTone(km,correct=false){return correct?'distance-correct':km<200?'distance-near':km<800?'distance-hot':km<2000?'distance-warm':km<5000?'distance-cool':'distance-cold';}
   function direction(bearing) { return ['N','NE','E','SE','S','SW','W','NW'][Math.round(((bearing % 360) + 360) % 360 / 45) % 8]; }
   function today(now = new Date()) { return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(now); }
   function addDays(day, count) { const date = new Date(day+'T12:00:00Z');date.setUTCDate(date.getUTCDate()+count);return date.toISOString().slice(0,10); }
@@ -40,5 +41,5 @@
     return {plan:next,editions};
   }
   function roundScore(puzzle, guesses) { return guesses.length && guesses[guesses.length-1]===puzzle.countryId ? Math.max(0,6000-1000*guesses.length) : 0; }
-  return {normalize,direction,today,addDays,validDate,emptyPlan,validatePlan,scheduleQueue,roundScore};
+  return {normalize,distanceTone,direction,today,addDays,validDate,emptyPlan,validatePlan,scheduleQueue,roundScore};
 });

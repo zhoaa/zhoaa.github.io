@@ -46,7 +46,7 @@ Five guesses per country. Wrong guesses show only approximate nearest-border dis
 
 For separated countries, closest border samples are found on a sphere (segments densified to at most 15 km), then the nearest neighboring segments are refined in a local equidistant projection and measured on WGS84. Values are rounded and displayed as approximate. Offshore islands can make the compass differ from an intuitive mainland-to-mainland direction.
 
-Correct first guesses score 5,000; each additional guess costs 1,000. A reveal or five misses scores zero. Daily progress persists locally, separately from curator playtests. Daily editions use `America/Toronto` dates.
+Correct first guesses score 5,000; each additional guess costs 1,000. Five misses scores zero; there is no manual reveal option. Daily progress persists locally, separately from curator playtests. Daily editions use `America/Toronto` dates.
 
 ## Rebuild and checks
 
@@ -75,3 +75,13 @@ python games/natureguessr/scripts/build_player.py
 ```
 
 `build_player.py` generates the player-only `daily/index.html` shell. The public route excludes curator navigation and never reads the visitor's curator approval/queue from local storage. A day with no published, eligible edition stays empty rather than selecting sample or unreviewed sets.
+
+## Player preview and presentation
+
+**Preview as player** on a candidate or scheduled edition opens the public player interface with an isolated, session-scoped preview. It has no curator approval controls, does not approve or publish anything, and does not overwrite daily progress. **Exit player preview** returns to the curator desk. Preview tokens only work in the browser tab that created them, and expire after one day.
+
+Species cards have equal heights across all responsive rows. The zoom-in button and the image/card surface open an uncropped photo; attribution links remain separate links. Correct guesses trigger a brief confetti/result animation, disabled for reduced-motion preferences.
+
+Guess history shows a right-aligned, color-coded distance box with no approximation symbol or temperature words. The color thresholds are explained only in How to play. Distances remain approximate boundary measurements despite their compact display.
+
+`build_player.py` versions application assets by content hash to prevent stale CSS/JavaScript after deployment; publishing a curation automatically rebuilds those references.

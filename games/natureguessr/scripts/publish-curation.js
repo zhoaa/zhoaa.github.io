@@ -10,4 +10,5 @@ if(Object.values(plan.schedule).flat().some(id=>archived.has(id)))throw new Erro
 const schedule=Object.fromEntries(Object.entries(plan.schedule).sort(([a],[b])=>a.localeCompare(b)));
 const file=path.join(__dirname,'../published-schedule.js');
 fs.writeFileSync(file,'// Explicitly reviewed daily editions. Generated from an exported curation plan.\nwindow.NATURE_PUBLISHED_SCHEDULE = '+JSON.stringify(schedule,null,2)+';\n');
+require('node:child_process').execFileSync('python3',[path.join(__dirname,'build_player.py')],{stdio:'inherit'});
 console.log(`Prepared ${Object.keys(schedule).length} reviewed daily editions in ${file}. Nothing was deployed.`);
