@@ -151,3 +151,87 @@ dialog.photo-dialog {
   font-size: .55rem;
 }
 .guess-correct { color: var(--green); text-align: center; font-weight: 700; }
+
+.round-result.game-results {
+  display: grid;
+  gap: 1rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.results-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1rem, 4vw, 2rem);
+  border-radius: .8rem;
+  background: var(--green-dark);
+  color: #fff;
+}
+.results-header h2 { font-size: 1rem; }
+.results-header .results-score { font-variant-numeric: tabular-nums; }
+.results-score strong {
+  color: white;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  line-height: 1.2;
+}
+.results-rounds { display: grid; gap: .7rem; }
+.results-round {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: .65rem;
+  background: var(--paper);
+}
+.results-round summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: .6rem 1rem;
+  align-items: center;
+  padding: .85rem 1rem;
+}
+.results-round summary::after {
+  content: '';
+  grid-column: 4;
+  width: .45rem;
+  height: .45rem;
+  border-right: 2px solid var(--green);
+  border-bottom: 2px solid var(--green);
+  transform: rotate(45deg);
+}
+.results-round[open] summary::after { transform: rotate(225deg); }
+.results-round summary::-webkit-details-marker { display: none; }
+.results-round summary small,
+.results-round summary strong { display: block; }
+.results-round summary strong { overflow-wrap: anywhere; }
+.results-round summary small { color: var(--muted); }
+.results-trail { white-space: nowrap; }
+.results-round-points { font-variant-numeric: tabular-nums; }
+.results-round-body {
+  display: grid;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+}
+.game-results .results-copy-status, .game-results .results-footer {
+  color: var(--muted);
+  font-size: .8rem;
+}
+.game-results .results-footer { text-align: center; }
+.game-results textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: .5rem;
+  padding: .75rem;
+  font: inherit;
+  color: inherit;
+}
+.game-results a:not(.observation-button) { color: var(--green); }
+@media (max-width: 520px) {
+  .results-round summary { gap: .25rem .65rem; grid-template-columns: minmax(0, 1fr) auto auto; }
+  .results-round summary::after { grid-column: 3; grid-row: 1; }
+  .results-trail { grid-column: 1 / -1; grid-row: 2; }
+  .results-round-points { grid-column: 2; grid-row: 1; }
+}

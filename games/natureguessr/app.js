@@ -139,25 +139,122 @@
   }
   function startDaily(previewDate) {
     const day=publicPlayer?L.today():(previewDate||L.today()),ids=plan.schedule[day];
-    if(!ids || ids.length!==3 || ids.some(id=>!puzzles.has(id)||puzzles.get(id).archived)){game=null;$('game-empty').hidden=false;$('game-content').hidden=true;$('game-mode').textContent='DAILY GAME';$('game-progress').textContent=day;return;}
+    if(!ids || ids.length!==3 || ids.some(id=>!puzzles.has(id)||puzzles.get(id).archived)){game=null;$('game-progress').hidden=false;$('game-empty').hidden=false;$('game-content').hidden=true;$('game-mode').textContent='DAILY GAME';$('game-progress').textContent=day;return;}
     $('game-empty').hidden=true;$('game-content').hidden=false;
     let saved;try{saved=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');}catch{}
     const valid=saved?.date===day&&JSON.stringify(saved.ids)===JSON.stringify(ids)&&Number.isInteger(saved.round)&&saved.round>=0&&saved.round<=ids.length&&Array.isArray(saved.rounds)&&saved.rounds.length===ids.length&&saved.rounds.every(r=>Array.isArray(r.guesses)&&r.guesses.length<=5&&new Set(r.guesses).size===r.guesses.length&&r.guesses.every(id=>countries.has(id))&&typeof r.revealed==='boolean');
     game=valid?saved:{mode:'daily',date:day,ids:[...ids],round:0,rounds:ids.map(()=>({guesses:[],revealed:false}))};renderGame();
   }
+  function guessHistory(p, guesses) {
+    return guesses.map((id,i)=>{
+      const c=countries.get(id),correct=id===p.countryId,f=D.feedback[p.countryId][id];
+      const marker = correct ? '<span class="guess-correct" aria-hidden="true">✓</span>' :
+        `<span class="compass mini-compass" role="img" aria-label="Direction ${L.direction(f.bearing)}"><i class="compass-needle" style="--bearing:${f.bearing}deg"></i><span aria-hidden="true">${L.direction(f.bearing)}</span></span>`;
+      return `<li class="guess-row"><span class="guess-number">${i+1}</span><span class="guess-country">${esc(c.name)}</span>${distanceBadge(L.distanceBand(f, correct))}${marker}</li>`;
+    }).join('');
+  }
+
+  function renderGameResults(rounds, total) {
+    const results = $('round-result');
+    const preview = game.mode === 'player-preview';
+    const date = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Toronto', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+    }).format(new Date(game.date + 'T12:00:00Z'));
+    const score = fmt(total) + ' / ' + fmt(rounds.length * 5000);
+    const entries = rounds.map(({ puzzle, guesses, points }, index) => {
+      const feedback = D.feedback[puzzle.countryId];
+      const won = guesses.at(-1) === puzzle.countryId;
+      const icons = guesses.map(id => id === puzzle.countryId ? '🌿' : L.distanceBand(feedback[id]).icon);
+      const trail = [...icons, ...Array(5 - icons.length).fill('▫️')].join(' ');
+      const label = 'Round ' + (index + 1);
+      return { label, puzzle, guesses, points, won, trail };
+    });
+    const shareText = [
+      `🌎 natGuessr ${preview ? 'Preview' : 'Daily'} · ${date}`,
+      `${score} points`,
+      '',
+      ...entries.map(({label, trail, points}) => `${label}  ${trail}  ${fmt(points)}`),
+      '',
+      'https://zhoaa.github.io/games/natureguessr/daily/',
+    ].join('\n');
+
+    $('site-photo-attribution').hidden = false;
+    results.hidden = false;
+    results.innerHTML = `
+      <header class="results-header">
+        <div>
+          <h2 id="results-title" tabindex="-1">Your ${preview ? 'preview' : 'daily'} score</h2>
+          <p class="results-score"><strong>${fmt(total)}</strong> / ${fmt(rounds.length * 5000)} points</p>
+        </div>
+        <button type="button" class="button" id="copy-score">Copy score</button>
+      </header>
+      <p id="copy-score-status" class="results-copy-status" role="status" hidden></p>
+      <textarea id="share-score-text" aria-label="Score to copy" rows="7" readonly hidden></textarea>
+      <div class="results-rounds">
+        ${entries.map(({ label, puzzle, guesses, points, won, trail }) => `
+          <details class="results-round">
+            <summary>
+              <span><small>${label}</small><strong>${esc(puzzle.country)}</strong></span>
+              <span class="results-trail" aria-hidden="true">${trail}</span>
+              <span class="results-round-points">${fmt(points)} pts</span>
+            </summary>
+            <div class="results-round-body">
+              <ol class="guess-history" aria-label="${label} guesses">${guessHistory(puzzle, guesses)}</ol>
+              <div class="photo-grid" aria-label="${label} observations">${photoCards(puzzle, true, true, won)}</div>
+            </div>
+          </details>`).join('')}
+      </div>
+      ${mode === 'public' ? '<p class="results-footer">Come back tomorrow for more!</p>' :
+        !preview ? '<button class="button" data-view="curate">Back to curator desk</button>' : ''}
+    `;
+
+    installPhotoFallbacks(results);
+    results.querySelectorAll('details').forEach(round => {
+      round.addEventListener('toggle', () => {
+        if (round.open) alignPhotoRows(round);
+      });
+    });
+    $('copy-score').addEventListener('click', async () => {
+      const status = $('copy-score-status');
+      const field = $('share-score-text');
+      try {
+        await navigator.clipboard.writeText(shareText);
+        field.hidden = true;
+        status.textContent = 'Score copied.';
+      } catch {
+        field.hidden = false;
+        field.value = shareText;
+        field.focus();
+        field.select();
+        status.textContent = 'Select and copy the score below.';
+      }
+      status.hidden = false;
+    });
+  }
+
   function renderGame() {
     if(!game)return;$('game-empty').hidden=true;$('game-content').hidden=false;
     $('game-mode').textContent=game.mode==='playtest'?'CURATOR PLAYTEST':(game.mode==='player-preview'?'PLAYER PREVIEW':'DAILY GAME')+' · '+game.date;
     const done = game.round >= game.ids.length;
-    const score = game.ids.reduce((sum, id, index) => {
+    const rounds = game.ids.map((id, index) => {
       const puzzle = puzzles.get(id);
       const guesses = game.rounds[index].guesses;
-      const points = L.roundScore(puzzle, guesses);
-      return sum + (points || (done ? L.proximityScore(guesses, D.feedback[puzzle.countryId]) : 0));
-    }, 0);
-    $('game-progress').textContent = done ? 'Game complete' : 'Puzzle '+(game.round+1)+' / '+game.ids.length+' · '+fmt(score)+' points';
-    $('game-clues').hidden=done;document.querySelector('.guess-layout').hidden=done;document.querySelector('.game-title').hidden=done;
-    if(done){$('site-photo-attribution').hidden=false;$('round-result').hidden=false;$('round-result').innerHTML=`<div><p class="eyebrow">RESULT</p><h2>${fmt(score)} / ${fmt(game.ids.length*5000)} points</h2><p>${game.ids.map(id=>esc(puzzles.get(id).country)).join(' · ')}</p></div>${publicPlayer?'<p>Next game tomorrow.</p>':'<button class="button" data-view="curate">Back to curator desk</button>'}`;return;}
+      const solvedPoints = L.roundScore(puzzle, guesses);
+      const points = solvedPoints || (done ? L.proximityScore(guesses, D.feedback[puzzle.countryId]) : 0);
+      return { puzzle, guesses, points };
+    });
+    const score = rounds.reduce((sum, round) => sum + round.points, 0);
+    $('game-progress').hidden = done;
+    $('game-progress').textContent = done ? '' : 'Puzzle '+(game.round+1)+' / '+game.ids.length+' · '+fmt(score)+' points';
+    $('game-clues').hidden = done;
+    document.querySelector('.guess-layout').hidden = done;
+    document.querySelector('.game-title').hidden = done;
+    $('round-result').classList.toggle('game-results', done);
+    if (done) {
+      renderGameResults(rounds, score);
+      saveDaily();
+      return;
+    }
     const p=puzzles.get(game.ids[game.round]),r=game.rounds[game.round],won=r.guesses.at(-1)===p.countryId,ended=won||r.revealed||r.guesses.length>=5;
     $('site-photo-attribution').hidden=!ended;
     const clues = $('game-clues');
@@ -183,12 +280,7 @@
     $('country-input').value='';selectedCountry=null;closeOptions();$('guess-error').textContent='';
     $('country-input').disabled=ended;$('guess-form').querySelector('button[type=submit]').disabled=ended;
     $('guesses-left').textContent=ended?(won?'Country found':'Country revealed'):(5-r.guesses.length)+' guesses left';
-    $('no-guesses').hidden=r.guesses.length>0;$('guess-history').innerHTML=r.guesses.map((id,i)=>{
-      const c=countries.get(id),correct=id===p.countryId,f=D.feedback[p.countryId][id];
-      const marker = correct ? '<span class="guess-correct" aria-hidden="true">✓</span>' :
-        `<span class="compass mini-compass" role="img" aria-label="Direction ${L.direction(f.bearing)}"><i class="compass-needle" style="--bearing:${f.bearing}deg"></i><span aria-hidden="true">${L.direction(f.bearing)}</span></span>`;
-      return `<li class="guess-row"><span class="guess-number">${i+1}</span><span class="guess-country">${esc(c.name)}</span>${distanceBadge(L.distanceBand(f, correct))}${marker}</li>`;
-    }).join('');
+    $('no-guesses').hidden=r.guesses.length>0;$('guess-history').innerHTML=guessHistory(p,r.guesses);
     const feedback = D.feedback[p.countryId][r.guesses.at(-1)];
     const compass = $('trail-compass');
     compass.querySelector('.compass-needle').style.setProperty('--bearing', (feedback?.bearing || 0) + 'deg');
@@ -258,7 +350,7 @@
     if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('photo-dialog').showModal();}}
     if(target.hasAttribute('data-close-dialog'))target.closest('dialog').close();
     if(target.id==='help-button')$('help-dialog').showModal();
-    if(target.id==='next-round'&&game){game.round++;renderGame();window.scrollTo({top:0,behavior:'instant'});}
+    if(target.id==='next-round'&&game){game.round++;renderGame();$('results-title')?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}
   });
   document.addEventListener('click',event=>{if(!event.target.closest('.country-picker'))closeOptions();});
   document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
