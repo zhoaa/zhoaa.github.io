@@ -349,6 +349,7 @@
     if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('photo-dialog').showModal();}}
     if(target.hasAttribute('data-close-dialog'))target.closest('dialog').close();
     if(target.id==='help-button')$('help-dialog').showModal();
+    if(target.id==='report-button')$('report-dialog').showModal();
     if(target.id==='next-round'&&game){game.round++;renderGame();$('results-title')?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}
   });
   document.addEventListener('click',event=>{if(!event.target.closest('.country-picker'))closeOptions();});

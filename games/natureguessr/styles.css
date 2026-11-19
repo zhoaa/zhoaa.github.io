@@ -235,3 +235,7 @@ dialog.photo-dialog {
   .results-trail { grid-column: 1 / -1; grid-row: 2; }
   .results-round-points { grid-column: 2; grid-row: 1; }
 }
+
+#report-button { margin-left: auto; padding: 0; }
+#report-dialog { max-width: min(34rem, calc(100vw - 2rem)); }
+#report-dialog a { overflow-wrap: anywhere; }

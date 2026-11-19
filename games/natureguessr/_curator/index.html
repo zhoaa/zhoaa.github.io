@@ -40,7 +40,7 @@
       </div>
     </section>
   </main>
-  <footer><span>natGuessr</span><span id="site-photo-attribution">Observations &amp; photos: <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist contributors</a> · CC0 / CC BY only</span></footer>
+  <footer><span>natGuessr</span><span id="site-photo-attribution">Observations &amp; photos: <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist contributors</a> · CC0 / CC BY only</span><button id="report-button" class="text-button" type="button"><span aria-hidden="true">⚠</span> Report</button></footer>
   <div id="win-celebration" class="win-celebration" aria-hidden="true"></div>
   <div id="toast" class="toast" role="status" hidden></div>
   <dialog id="detail-dialog"><div class="dialog-heading"><div><p class="eyebrow">CANDIDATE REVIEW</p><h2 id="detail-title"></h2></div><button class="close-button" data-close-dialog aria-label="Close review">×</button></div><div id="detail-body"></div></dialog>
@@ -56,6 +56,13 @@
       <p>Proximity is measured between the closest borders of the two countries. Closer guesses are worth partial credit!</p>
       <p>Observations and ranges are taken from <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist, CC BY</a>.</p>
     </div>
+  </dialog>
+  <dialog id="report-dialog" aria-labelledby="report-title">
+    <div class="dialog-heading">
+      <h2 id="report-title">Report</h2>
+      <button class="close-button" data-close-dialog aria-label="Close report" autofocus>×</button>
+    </div>
+    <p>All observations are curated by hand. If I've missed something concerning, please send me an email at <a href="mailto:birdishbrainish@gmail.com">birdishbrainish@gmail.com</a>. If you would like your observation taken down for any reason at all, please feel free to contact the same email ASAP.</p>
   </dialog>
   <script src="../daily/edition.js"></script><script src="data.js"></script><script src="../logic.js"></script><script src="../app.js"></script>
 </body>

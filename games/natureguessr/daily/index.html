@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#153f32">
   <title>natGuessr Beta · Daily game</title>
-  <link rel="stylesheet" href="../styles.css?v=6082fdf613">
+  <link rel="stylesheet" href="../styles.css?v=2d219e8f66">
 </head>
 <body data-mode="public">
   <header class="site-header">
@@ -23,7 +23,7 @@
       </div>
     </section>
   </main>
-  <footer><span>natGuessr</span><span id="site-photo-attribution">Observations &amp; photos: <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist contributors</a> · CC0 / CC BY only</span></footer>
+  <footer><span>natGuessr</span><span id="site-photo-attribution">Observations &amp; photos: <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist contributors</a> · CC0 / CC BY only</span><button id="report-button" class="text-button" type="button"><span aria-hidden="true">⚠</span> Report</button></footer>
   <div id="win-celebration" class="win-celebration" aria-hidden="true"></div>
   <div id="toast" class="toast" role="status" hidden></div>
   <dialog id="photo-dialog" class="photo-dialog" aria-label="Observation photo preview"><button class="close-button" data-close-dialog aria-label="Close photo">×</button><img id="full-photo" alt=""></dialog>
@@ -39,6 +39,13 @@
       <p>Observations and ranges are taken from <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist, CC BY</a>.</p>
     </div>
   </dialog>
-  <script src="edition.js?v=eb0b566b67"></script><script src="../logic.js?v=f64df72628"></script><script src="../app.js?v=43fafd0b2b"></script>
+  <dialog id="report-dialog" aria-labelledby="report-title">
+    <div class="dialog-heading">
+      <h2 id="report-title">Report</h2>
+      <button class="close-button" data-close-dialog aria-label="Close report" autofocus>×</button>
+    </div>
+    <p>All observations are curated by hand. If I've missed something concerning, please send me an email at <a href="mailto:birdishbrainish@gmail.com">birdishbrainish@gmail.com</a>. If you would like your observation taken down for any reason at all, please feel free to contact the same email ASAP.</p>
+  </dialog>
+  <script src="edition.js?v=eb0b566b67"></script><script src="../logic.js?v=f64df72628"></script><script src="../app.js?v=8c8bf7a632"></script>
 </body>
 </html>
