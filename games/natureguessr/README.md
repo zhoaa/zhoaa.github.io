@@ -40,7 +40,7 @@ This establishes **uniqueness within a defined modeled distribution index**, not
 
 ## Game feedback
 
-Five guesses per country. Wrong guesses show only approximate nearest-border distance and a compass bearing toward the answer. There are no temperature labels or category badges. Distances include islands/territories assigned to each country entity, not just mainland centers. Neighboring polygons have zero distance and display “Borders touch”; their compass points toward the shared border from an interior point of the guessed country.
+Five guesses per country. Wrong guesses show **Very Far 🦗**, **Far 📍**, **Close 🤏**, **Very Close ❗**, or **Borders ‼️** alongside a compass bearing. The first four bands start at 5,000, 2,000, 800, and 0 km respectively. A shared border takes precedence. The proximity calculation includes islands and territories assigned to each country. For touching countries, the compass points toward the shared border from an interior point of the guessed country.
 
 For separated countries, closest border samples are found on a sphere (segments densified to at most 15 km), then the nearest neighboring segments are refined in a local equidistant projection and measured on WGS84. Values are rounded and displayed as approximate. Offshore islands can make the compass differ from an intuitive mainland-to-mainland direction.
 
@@ -80,7 +80,7 @@ python games/natureguessr/_curator/scripts/build_player.py
 
 Species cards have equal heights across all responsive rows. The zoom-in button and the image/card surface open an uncropped photo; attribution links remain separate links. Correct guesses trigger a brief confetti/result animation, disabled for reduced-motion preferences.
 
-Guess history shows a right-aligned, color-coded distance box with no approximation symbol or temperature words. The color thresholds are explained only in How to play. Distances remain approximate boundary measurements despite their compact display.
+The proximity palette runs from blue through purple to red. The guess history and compass panel use the same labels as the How to play legend.
 
 `build_player.py` versions application assets by content hash to prevent stale CSS/JavaScript after deployment; publishing a curation automatically rebuilds those references.
 
@@ -88,8 +88,8 @@ Species-card name rows, scientific-name rows, and attribution dividers align acr
 
 Typography uses fluid viewport-relative sizes with readable minimums and card-container-relative text sizing. Photo grids reflow from five to three, two, or one column as space narrows. Inputs retain at least the browser's base text size; text respects browser font settings. Layout checks at 320, 390, 768, and 1440 CSS pixels confirmed no horizontal overflow and equal card heights/divider positions.
 
-At window widths of 1100px and below, the composition centers the brand, game text, controls, feedback, results, and card groups. Partial rows are centered, including a lone fifth card on mobile. Copyright/license details in player views are deferred until a win or five misses, including in photo popups; post-round source links are full-width green “See Observation ↗” buttons. Curator evidence retains attribution. The visible brand is natGuessr; existing URLs, storage keys, and exported-plan compatibility are preserved.
+At window widths of 1100px and below, the composition centers the brand, game text, controls, feedback, results, and card groups. Partial rows are centered, including a lone fifth card on mobile. Copyright/license details in player views are deferred until a win or five misses; post-round source links are full-width green “See Observation ↗” buttons. Curator evidence retains attribution. The visible brand is natGuessr; existing URLs, storage keys, and exported-plan compatibility are preserved.
 
-Candidate discovery and selection use no LLM calls or language-model services. The “script-checked” label refers to deterministic Python geometry and set intersections over published ecological range maps. The curator page includes runnable generation commands; dependencies are in `_curator/scripts/requirements.txt`. Run the bank builder in a terminal. “Posted by” is visible throughout player rounds and photo popups; copyright, license, and observation links appear only after the round ends.
+Candidate discovery and selection use no LLM calls or language-model services. The “script-checked” label refers to deterministic Python geometry and set intersections over published ecological range maps. The curator page includes runnable generation commands; dependencies are in `_curator/scripts/requirements.txt`. Run the bank builder in a terminal. “Posted by” is visible on cards throughout player rounds; copyright, license, and observation links appear only after the round ends.
 
-Censored names and deferred credits reserve their fully revealed layout space from the first render, so cards do not grow when clues or end-of-round attribution appear. Hidden content is excluded from accessibility and interaction.
+During guessing, the photographs fill the space used by credits after the round. At the end, the photos shrink to their regular crop and the details slide up into place. Reduced-motion preferences disable the animation. The uncropped preview displays the photo and its close control.

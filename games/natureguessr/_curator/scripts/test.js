@@ -40,7 +40,11 @@ for(const p of D.puzzles){
 assert.equal(D.feedback.ZAF.NAM.km,0);assert.equal(D.feedback.ZAF.NAM.touching,true);
 assert.ok(D.feedback.ZAF.USA.km>5000,'distant countries cannot be hot');
 assert.equal(L.direction(0),'N');assert.equal(L.direction(90),'E');assert.equal(L.direction(225),'SW');assert.equal(L.direction(359),'N');
-assert.equal(L.distanceTone(199),'distance-near');assert.equal(L.distanceTone(200),'distance-hot');assert.equal(L.distanceTone(800),'distance-warm');assert.equal(L.distanceTone(2000),'distance-cool');assert.equal(L.distanceTone(5000),'distance-cold');assert.equal(L.distanceTone(0,true),'distance-correct');
+for (const [km, tone] of [[0,'very-close'],[799,'very-close'],[800,'close'],[1999,'close'],[2000,'far'],[4999,'far'],[5000,'very-far']]) {
+  assert.equal(L.distanceBand({km}).tone,tone);
+}
+assert.equal(L.distanceBand({km:0,touching:true}).tone,'borders');
+assert.equal(L.distanceBand({km:0},true).tone,'correct');
 assert.equal(L.today(new Date('2026-11-20T02:00:00Z')),'2026-11-19','Toronto day boundary');
 assert.equal(L.addDays('2026-12-31',1),'2027-01-01');assert.equal(L.validDate('2026-02-30'),false);
 let plan=L.emptyPlan();plan.approved=ids.slice(0,8);plan.queue=ids.slice(0,8);

@@ -59,8 +59,13 @@
     return poster+`<div class="deferred-credit${showObservation?'':' credit-concealed'}"${showObservation?'':' aria-hidden="true" inert'}><p>${esc(p.attribution)}</p><div class="photo-license"><a href="${licenseLink(p.license)}" target="_blank" rel="noopener noreferrer">${licenseName(p.license)}</a><a class="observation-button" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">See Observation <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a></div></div>`;
   }
   function photoCards(p, showObservation=true, revealNames=true) {
-    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-observation-visible="${showObservation}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'}${showObservation?' posted by '+esc(c.observation.observer):''}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.name)+'</span><span class="censored" aria-label="Species name hidden">██████████</span></span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.scientific)+'</span><span class="censored" aria-label="Scientific name hidden">████ ███████</span></span>'}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
+    return p.clues.map((c,i)=>`<article class="photo-card"><button class="photo-button" data-photo-puzzle="${p.id}" data-photo-index="${i}" data-name-visible="${revealNames}" aria-label="${revealNames?'Zoom in on '+esc(c.name):'Zoom in on observation photo '+(i+1)}"><img src="${esc(c.observation.photo.url)}" alt="${revealNames?esc(c.name):'Observation photo'}${showObservation?' posted by '+esc(c.observation.observer):''}" loading="lazy" decoding="async"><span class="image-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"></circle><path d="m15 15 6 6M10 7v6M7 10h6"></path></svg></span></button><div class="photo-info"><h3>${revealNames?esc(c.name):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.name)+'</span><span class="censored" aria-label="Species name hidden">██████████</span></span>'}</h3><p class="scientific">${revealNames?esc(c.scientific):'<span class="concealed-name"><span class="reserved-name" aria-hidden="true">'+esc(c.scientific)+'</span><span class="censored" aria-label="Scientific name hidden">████ ███████</span></span>'}</p><div class="photo-credit">${creditHtml(c,showObservation)}</div></div></article>`).join('');
   }
+  function distanceBadge({ tone, label, icon }) {
+    return `<span class="guess-distance distance-${tone}">${label}${icon ? ` <span aria-hidden="true">${icon}</span>` : ''}</span>`;
+  }
+  $('distance-legend').innerHTML = L.distanceBands.map(band => `<li>${distanceBadge(band)}</li>`).join('');
+
   function alignPhotoRows(container) {
     const grids=container.matches?.('.photo-grid')?[container]:[...container.querySelectorAll('.photo-grid')];
     for(const grid of grids){
@@ -69,6 +74,9 @@
       const names=[...grid.querySelectorAll('.photo-info h3')],scientific=[...grid.querySelectorAll('.photo-info .scientific')];
       grid.style.setProperty('--name-row',Math.ceil(Math.max(0,...names.map(e=>e.getBoundingClientRect().height)))+'px');
       grid.style.setProperty('--scientific-row',Math.ceil(Math.max(0,...scientific.map(e=>e.getBoundingClientRect().height)))+'px');
+      for (const credit of grid.querySelectorAll('.credit-concealed')) {
+        credit.closest('.photo-card').style.setProperty('--photo-extra', credit.scrollHeight+'px');
+      }
     }
   }
   window.addEventListener('resize',()=>requestAnimationFrame(()=>alignPhotoRows(document)));
@@ -138,19 +146,43 @@
     if(done){$('site-photo-attribution').hidden=false;$('round-result').hidden=false;$('round-result').innerHTML=`<div><p class="eyebrow">RESULT</p><h2>${fmt(score)} / ${fmt(game.ids.length*5000)} points</h2><p>${game.ids.map(id=>esc(puzzles.get(id).country)).join(' · ')}</p></div>${publicPlayer?'<p>Next game tomorrow.</p>':'<button class="button" data-view="curate">Back to curator desk</button>'}`;return;}
     const p=puzzles.get(game.ids[game.round]),r=game.rounds[game.round],won=r.guesses.at(-1)===p.countryId,ended=won||r.revealed||r.guesses.length>=5;
     $('site-photo-attribution').hidden=!ended;
-    $('game-clues').innerHTML=photoCards(p,ended,ended||r.guesses.length>=2);installPhotoFallbacks($('game-clues'));alignPhotoRows($('game-clues'));
+    const clues = $('game-clues');
+    const revealing = ended && clues.querySelector('.credit-concealed') &&
+      clues.querySelector('.photo-button')?.dataset.photoPuzzle === p.id;
+    const before = revealing && !matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? [...clues.querySelectorAll('.photo-button')].map(photo => photo.getBoundingClientRect().height)
+      : [];
+    clues.innerHTML = photoCards(p, ended, ended || r.guesses.length >= 2);
+    installPhotoFallbacks(clues);
+    alignPhotoRows(clues);
+    if (before.length) {
+      [...clues.querySelectorAll('.photo-button')].forEach((photo, index) => {
+        photo.animate(
+          [{ height: before[index] + 'px' }, { height: photo.getBoundingClientRect().height + 'px' }],
+          { duration: 360, easing: 'cubic-bezier(.2,.65,.3,1)' },
+        );
+      });
+      clues.querySelectorAll('.deferred-credit').forEach(credit => {
+        credit.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360 });
+      });
+    }
     $('country-input').value='';selectedCountry=null;closeOptions();$('guess-error').textContent='';
     $('country-input').disabled=ended;$('guess-form').querySelector('button[type=submit]').disabled=ended;
     $('guesses-left').textContent=ended?(won?'Country found':'Country revealed'):(5-r.guesses.length)+' guesses left';
     $('no-guesses').hidden=r.guesses.length>0;$('guess-history').innerHTML=r.guesses.map((id,i)=>{
       const c=countries.get(id),correct=id===p.countryId,f=D.feedback[p.countryId][id];
-      return `<li class="guess-row"><span class="guess-number">${i+1}</span><span class="guess-country">${esc(c.name)}</span><span class="guess-distance ${L.distanceTone(f.km,correct)}">${correct?'Correct':fmt(f.km)+' km'}</span>${correct?'<span class="mini-compass" aria-label="Correct">✓</span>':`<span class="mini-compass" role="img" aria-label="Travel ${L.direction(f.bearing)}, bearing ${f.bearing} degrees"><b style="transform:rotate(${f.bearing}deg)"></b><span>${L.direction(f.bearing)}</span></span>`}</li>`;
+      const marker = correct ? '<span class="guess-correct" aria-hidden="true">✓</span>' :
+        `<span class="compass mini-compass" role="img" aria-label="Direction ${L.direction(f.bearing)}"><i class="compass-needle" style="--bearing:${f.bearing}deg"></i><span aria-hidden="true">${L.direction(f.bearing)}</span></span>`;
+      return `<li class="guess-row"><span class="guess-number">${i+1}</span><span class="guess-country">${esc(c.name)}</span>${distanceBadge(L.distanceBand(f, correct))}${marker}</li>`;
     }).join('');
     const last=r.guesses.at(-1),f=last?D.feedback[p.countryId][last]:null;
-    $('trail-compass').querySelector('.compass-needle').style.transform='rotate('+(f?.bearing||0)+'deg)';
+    $('trail-compass').querySelector('.compass-needle').style.setProperty('--bearing', (f?.bearing || 0) + 'deg');
     if(won){$('trail-heading').textContent='Correct';$('trail-copy').textContent=p.country;}
-    else if(f){$('trail-heading').textContent=fmt(f.km)+' km'+' · '+L.direction(f.bearing);$('trail-copy').textContent=f.touching?'Shared border with '+countries.get(last).name+'.':'From '+countries.get(last).name+' to the nearest border.';}
-    else{$('trail-heading').textContent='Direction';$('trail-copy').textContent='Each guess shows distance between borders and direction.';}
+    else if(f){
+      $('trail-heading').innerHTML = distanceBadge(L.distanceBand(f)) + ' <span>' + L.direction(f.bearing) + '</span>';
+      $('trail-copy').textContent=f.touching?'Shared border with '+countries.get(last).name+'.':'From '+countries.get(last).name+' toward the nearest border.';
+    }
+    else{$('trail-heading').textContent='Direction';$('trail-copy').textContent='Each guess shows how close you are and which way to go.';}
     $('round-result').hidden=!ended;
     if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${fmt(L.roundScore(p,r.guesses))} points · ${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See edition result':'Next country'}</button>`}</div>`;}
     saveDaily();
@@ -208,7 +240,7 @@
     if(target.dataset.playerEdition&&!publicPlayer)startPlayerPreview(plan.schedule[target.dataset.playerEdition],target.dataset.playerEdition);
     if(target.dataset.previewEdition&&!publicPlayer){showView('game');startDaily(target.dataset.previewEdition);}
     if(target.dataset.country)chooseCountry(target.dataset.country);
-    if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('full-photo-credit').innerHTML='<strong>'+esc(target.dataset.nameVisible==='true'?c.name:'Observation photo')+'</strong><div>'+creditHtml(c,target.dataset.observationVisible==='true')+'</div>';$('photo-dialog').showModal();}}
+    if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('photo-dialog').showModal();}}
     if(target.hasAttribute('data-close-dialog'))target.closest('dialog').close();
     if(target.id==='help-button')$('help-dialog').showModal();
     if(target.id==='next-round'&&game){game.round++;renderGame();window.scrollTo({top:0,behavior:'instant'});}
