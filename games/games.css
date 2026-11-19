@@ -53,3 +53,26 @@ h1 { margin: 1rem 0 0; }
 @media (prefers-reduced-motion: reduce) {
   .game img { animation: none; }
 }
+
+.game .natguessr-logo {
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 50% 50% 50% 12%;
+  background: #153f32;
+  color: white;
+  font: bold 6rem/1 system-ui, sans-serif;
+  opacity: .21;
+  animation: float 5s ease-in-out infinite;
+}
+
+.game-beta {
+  font: bold .85rem/1 system-ui, sans-serif;
+  color: #153f32;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game .natguessr-logo { animation: none; }
+}

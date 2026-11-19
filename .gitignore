@@ -1,1 +1,5 @@
 .DS_Store
+
+# Local natGuessr curation and generated preview
+natguessr-curation*.json
+games/natureguessr/_curator/preview/

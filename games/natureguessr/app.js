@@ -1,9 +1,18 @@
 (function () {
   'use strict';
+  const mode=document.body.dataset.mode, publicPlayer=mode==='public'||mode==='preview';
   const D=window.NATURE_DATA,L=window.NatureLogic,$=id=>document.getElementById(id);
-  if (!D || !L) { $('candidate-list').textContent='The candidate bank could not load. Please reload the page.';return; }
+  if (!D || !L) {
+    if(publicPlayer){
+      $('game-view').hidden=false;$('game-content').hidden=true;$('game-empty').hidden=false;
+      $('game-empty').querySelector('h1').textContent='The game could not load.';
+    } else {
+      $('candidate-list').textContent='The candidate bank could not load. Please reload the page.';
+    }
+    return;
+  }
   const puzzles=new Map(D.puzzles.map(p=>[p.id,p])),countries=new Map(D.countries.map(c=>[c.id,c]));
-  const qa=new URLSearchParams(location.search).has('qa'), publicPlayer=document.body.dataset.mode==='public';
+  const qa=new URLSearchParams(location.search).has('qa');
   const activePuzzles=D.puzzles.filter(p=>!p.archived);
   const PLAN_KEY='natureguessr-curation-v1'+(qa?'-qa':''),DAILY_KEY='natureguessr-daily-v1'+(qa?'-qa':'');
   let plan=L.emptyPlan(),filter='all',view='curate',game=null,selectedCountry=null,suggestions=[],highlight=-1,toastTimer;
@@ -38,9 +47,9 @@
   function showView(next) {
     view=next;
     $('site-photo-attribution').hidden=next==='game'||next==='daily';
-    for(const id of ['curate','queue','game'])$(id+'-view').hidden=id!==(next==='daily'?'game':next);
+    for(const id of ['curate','queue','game'])$(id+'-view') && ($(id+'-view').hidden=id!==(next==='daily'?'game':next));
     document.querySelectorAll('.nav-button').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
-    document.title='natGuessr · '+({curate:'Curator desk',queue:'Approved queue',daily:'Daily game',game:'Playtest'}[next]||'Daily game');
+    document.title=(publicPlayer?'natGuessr Beta · ':'natGuessr · ')+({curate:'Curator desk',queue:'Approved queue',daily:'Daily game',game:'Playtest'}[next]||'Daily game');
     if(next==='daily')startDaily();if(next==='queue')renderQueue();window.scrollTo({top:0,behavior:'instant'});
   }
   function licenseLink(code) { return code==='cc0'?'https://creativecommons.org/publicdomain/zero/1.0/':'https://creativecommons.org/licenses/by/4.0/'; }
@@ -100,7 +109,7 @@
   function startPlayerPreview(ids,date=L.today()) {
     if(!Array.isArray(ids)||!ids.length||ids.some(id=>!puzzles.has(id)||puzzles.get(id).archived)){toast('Choose eligible puzzles to preview.');return;}
     const token=crypto.randomUUID();
-    try{sessionStorage.setItem('natureguessr-player-preview',JSON.stringify({token,ids,date,createdAt:Date.now()}));location.assign(new URL('daily/?preview='+encodeURIComponent(token),location.href));}
+    try{sessionStorage.setItem('natureguessr-player-preview',JSON.stringify({token,ids,date,createdAt:Date.now()}));location.assign(new URL('preview/?preview='+encodeURIComponent(token),location.href));}
     catch{toast('Player preview requires browser session storage.');}
   }
   function celebrateWin() {
@@ -173,21 +182,23 @@
     if(!D.feedback[p.countryId]?.[c.id]){$('guess-error').textContent='Border feedback is unavailable for that country.';return;}
     r.guesses.push(c.id);renderGame();if(c.id===p.countryId)celebrateWin();if(r.guesses.at(-1)!==p.countryId&&r.guesses.length<5)$('country-input').focus();
   });
-  $('game-back').addEventListener('click',()=>showView('curate'));
-  $('bank-search').addEventListener('input',renderBank);
-  $('schedule-start').value=L.addDays(L.today(),1);$('schedule-start').min=L.today();
-  $('schedule-button').addEventListener('click',()=>{
-    if($('schedule-start').value<L.today()){toast('Choose today or a future date.');return;}
-    try {const result=L.scheduleQueue(plan,$('schedule-start').value);plan=result.plan;persist();toast(result.editions+' daily '+(result.editions===1?'edition':'editions')+' scheduled.');}catch(e){toast(e.message);}
-  });
-  $('export-button').addEventListener('click',()=>{
-    const exported={...plan,exportedAt:new Date().toISOString(),bankBuiltAt:D.builtAt};
-    const url=URL.createObjectURL(new Blob([JSON.stringify(exported,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='natguessr-curation-'+L.today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  });
-  $('import-file').addEventListener('change',async event=>{
-    const file=event.target.files[0];if(!file)return;
-    try{if(file.size>1000000)throw new Error('That file is too large for a curation plan.');const imported=L.validatePlan(JSON.parse(await file.text()),[...puzzles.keys()]);plan=imported;persist();toast('Saved curation imported.');}catch(e){toast(e.message);}event.target.value='';
-  });
+  if(!publicPlayer){
+    $('game-back').addEventListener('click',()=>showView('curate'));
+    $('bank-search').addEventListener('input',renderBank);
+    $('schedule-start').value=L.addDays(L.today(),1);$('schedule-start').min=L.today();
+    $('schedule-button').addEventListener('click',()=>{
+      if($('schedule-start').value<L.today()){toast('Choose today or a future date.');return;}
+      try {const result=L.scheduleQueue(plan,$('schedule-start').value);plan=result.plan;persist();toast(result.editions+' daily '+(result.editions===1?'edition':'editions')+' scheduled.');}catch(e){toast(e.message);}
+    });
+    $('export-button').addEventListener('click',()=>{
+      const exported={...plan,exportedAt:new Date().toISOString(),bankBuiltAt:D.builtAt};
+      const url=URL.createObjectURL(new Blob([JSON.stringify(exported,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='natguessr-curation-'+L.today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+    $('import-file').addEventListener('change',async event=>{
+      const file=event.target.files[0];if(!file)return;
+      try{if(file.size>1000000)throw new Error('That file is too large for a curation plan.');const imported=L.validatePlan(JSON.parse(await file.text()),[...puzzles.keys()]);plan=imported;persist();toast('Saved curation imported.');}catch(e){toast(e.message);}event.target.value='';
+    });
+  }
   document.addEventListener('click',event=>{
     const target=event.target.closest('button,a')||event.target.closest('.photo-card')?.querySelector('.photo-button');if(!target)return;
     if(target.dataset.view){event.preventDefault();showView(target.dataset.view);}
@@ -205,9 +216,9 @@
   });
   document.addEventListener('click',event=>{if(!event.target.closest('.country-picker'))closeOptions();});
   document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
-  renderBank();renderQueue();
+  if(!publicPlayer){renderBank();renderQueue();}
   let playerPreview=null;
-  if(publicPlayer){try{const token=new URLSearchParams(location.search).get('preview'),saved=JSON.parse(sessionStorage.getItem('natureguessr-player-preview')||'null');if(token&&saved?.token===token&&Date.now()-saved.createdAt<86400000&&Array.isArray(saved.ids)&&saved.ids.length>0&&saved.ids.length<=3&&saved.ids.every(id=>puzzles.has(id)&&!puzzles.get(id).archived))playerPreview=saved;}catch{}}
-  if(playerPreview){showView('game');$('exit-player-preview').hidden=false;game={mode:'player-preview',date:playerPreview.date||L.today(),ids:playerPreview.ids,round:0,rounds:playerPreview.ids.map(()=>({guesses:[],revealed:false}))};renderGame();document.title='natGuessr · Player preview';}
+  if(mode==='preview'){try{const token=new URLSearchParams(location.search).get('preview'),saved=JSON.parse(sessionStorage.getItem('natureguessr-player-preview')||'null');if(token&&saved?.token===token&&Date.now()-saved.createdAt<86400000&&Array.isArray(saved.ids)&&saved.ids.length>0&&saved.ids.length<=3&&saved.ids.every(id=>puzzles.has(id)&&!puzzles.get(id).archived))playerPreview=saved;}catch{}}
+  if(playerPreview){showView('game');game={mode:'player-preview',date:playerPreview.date||L.today(),ids:playerPreview.ids,round:0,rounds:playerPreview.ids.map(()=>({guesses:[],revealed:false}))};renderGame();document.title='natGuessr Beta · Player preview';}
   else showView(publicPlayer?'daily':'curate');
 })();

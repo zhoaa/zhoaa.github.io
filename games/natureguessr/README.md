@@ -1,26 +1,25 @@
-# natGuessr — curator prototype
+# natGuessr Beta
 
-Run `npm run dev` from the repository root and open `/games/natureguessr/`. This is a normal standalone HTML/CSS/JS app; it also opens directly from `index.html`. It does not depend on the chat visualization renderer. Fonts and openly licensed observation photographs load from their original providers.
+The Games card opens the [daily player](https://zhoaa.github.io/games/natureguessr/daily/). The public game uses the current date in America/Toronto and serves three rounds for that date.
 
-## Review first, publish later
+## Make and release a daily game
 
-The bank now stores **126 sets: 100 newly added candidates plus the original 26**. Nine original sets are archived because a displayed species name contains the answer country or its adjective, leaving **117 eligible candidates**. Existing IDs are retained so curation records are not silently deleted. Archived entries cannot be approved, scheduled, or published. None is pre-approved or pre-scheduled.
+1. From the repository root, run `npm run natguessr:curate`. Leave the terminal running and open `http://localhost:8000/games/natureguessr/_curator/` on your computer. Use the same browser and address each time to keep your saved curation.
+2. In **Curator desk**, search the candidate bank. Each set has five observations, one per species. Review the photos and evidence. Use **Preview as player** to try a set, then click **Approve & queue** for each set you want.
+3. Open **Queue**, reorder the sets, and choose a **First day**. Click **Schedule queued sets**. Each day takes three sets in queue order. You can schedule several days in one sitting and use **Preview as player** next to a date to test the full edition.
+4. Click **Export curation** and save the JSON somewhere private, such as Downloads. Export again after making changes. Use **Import a saved curation** in Queue to restore a backup or continue on another computer.
+5. On the edition's Toronto date, run this from the repository root, substituting the actual path to your latest export:
 
-1. Use **Curator desk** to search, inspect photos and evidence, playtest, approve, or reject sets.
-2. **Approve & queue** adds a set to your ordered, unscheduled queue. Reorder or remove entries in **Queue**.
-3. Choose a start date and schedule complete groups of three. Existing dates are preserved and leftover sets remain queued. Return an edition to the queue to change it.
-4. The separate **public Daily game** at `daily/` uses only `published-schedule.js` for the current Toronto date. It ignores browser-local curator drafts, so all players receive the same reviewed edition. Use **Preview edition** in the queue to play a local draft before publishing. No unreviewed fallback is used.
-5. Export curation as JSON to back it up or hand it off for later ordering/publishing. Import restores the exported approval, rejection, queue, and calendar state.
+   ```sh
+   npm run natguessr:release -- "$HOME/Downloads/natguessr-curation-YYYY-MM-DD.json"
+   git add games/natureguessr/daily/edition.js games/natureguessr/daily/index.html
+   git commit --only -m "Release today's natGuessr edition" -- games/natureguessr/daily/edition.js games/natureguessr/daily/index.html
+   git push origin main
+   ```
 
-Curation is stored in this browser's local storage, not synced to a server. Export a backup before changing browsers or clearing storage. Import replaces the local draft. `/games/natureguessr/?qa=1` uses a separate QA storage namespace; it does not change the ordinary curator state.
+6. Once GitHub Pages finishes deploying, open the public daily game and check that it starts at round 1 of 3. Repeat step 5 on each release day. Allow time for the Pages build after pushing.
 
-When explicitly ready to prepare a reviewed schedule for this static site:
-
-```sh
-node games/natureguessr/scripts/publish-curation.js /absolute/path/to/natureguessr-curation.json
-```
-
-This validates the plan and updates `published-schedule.js`. It does **not** deploy, commit, or publish anything. A normal repository deployment is still needed to share the edition with others. The current published schedule is empty.
+The loopback server gives you a curator desk on your own computer. Your approvals, rejections, and calendar are stored in that browser, with the exported JSON as your private backup. The GitHub Pages Jekyll build excludes the whole `_curator` directory. The release command validates the export and publishes data for precisely the current Toronto date. Keep the exported plan out of Git and outside any public web root. The released answers are readable in browser source because scoring runs in the browser.
 
 ## Country-first picking and image permissions
 
@@ -30,7 +29,7 @@ Shared filters: Research Grade, wild, photo present, species or finer, open obse
 
 Each image displays the poster and the API's original photo attribution, plus its license link. Cropped thumbnails open in an uncropped viewer. Player observation links appear only after the answer is known (correct answer, exhausted guesses, or explicit reveal); curator review keeps its sources available. No separate photo-source link is shown.
 
-Actual observation/photo identifiers, original image URLs, credits, license codes, selection queries, and country-support evidence are in `data.js`. No OAuth tokens or credentials are used. Photos are loaded directly, rather than copied into the repository. License/availability changes can be reflected by rebuilding the bank and reviewing affected sets.
+Actual observation/photo identifiers, original image URLs, credits, license codes, selection queries, and country-support evidence are in `_curator/data.js`. No OAuth tokens or credentials are used. Photos are loaded directly, rather than copied into the repository. License/availability changes can be reflected by rebuilding the bank and reviewing affected sets.
 
 ## What uniqueness means
 
@@ -50,11 +49,11 @@ Correct first guesses score 5,000; each additional guess costs 1,000. Five misse
 
 ## Rebuild and checks
 
-`scripts/build_bank.py` requires Python with numpy, scipy, shapely, and pyproj:
+`_curator/scripts/build_bank.py` requires Python with numpy, scipy, shapely, and pyproj:
 
 ```sh
-python scripts/build_bank.py --work-dir /absolute/path/to/public-data-cache
-node scripts/test.js
+python games/natureguessr/_curator/scripts/build_bank.py --work-dir /absolute/path/to/public-data-cache
+node games/natureguessr/_curator/scripts/test.js
 ```
 
 The builder uses anonymous, cached requests, at most one API request per 1.12 seconds. It caches published range maps and Natural Earth geometry, selects country-scoped candidate pools, rejects ambiguous support intersections, and emits `data.js`. No scraping of personal/private data or authentication is involved.
@@ -70,8 +69,8 @@ New animal-photo queries use `term_id_or_unknown=17&without_term_value_id=19`, w
 To append another bank batch while preserving IDs:
 
 ```sh
-python games/natureguessr/scripts/build_bank.py --work-dir /absolute/path/to/public-data-cache --add 100 --per-country 10
-python games/natureguessr/scripts/build_player.py
+python games/natureguessr/_curator/scripts/build_bank.py --work-dir /absolute/path/to/public-data-cache --add 100 --per-country 10
+python games/natureguessr/_curator/scripts/build_player.py
 ```
 
 `build_player.py` generates the player-only `daily/index.html` shell. The public route excludes curator navigation and never reads the visitor's curator approval/queue from local storage. A day with no published, eligible edition stays empty rather than selecting sample or unreviewed sets.
@@ -92,6 +91,6 @@ Typography uses fluid viewport-relative sizes with readable minimums and card-co
 
 At window widths of 1100px and below, the composition centers the brand, game text, controls, feedback, results, and card groups. Partial rows are centered, including a lone fifth card on mobile. Copyright/license details in player views are deferred until a win or five misses, including in photo popups; post-round source links are full-width green “See Observation ↗” buttons. Curator evidence retains attribution. The visible brand is natGuessr; existing URLs, storage keys, and exported-plan compatibility are preserved.
 
-Candidate discovery and selection use no LLM calls or language-model services. The “script-checked” label refers to deterministic Python geometry and set intersections over published ecological range maps. The curator page includes runnable generation commands; dependencies are in `scripts/requirements.txt`. The static admin page cannot execute Python itself. “Posted by” is visible throughout player rounds and photo popups; copyright, license, and observation links appear only after the round ends.
+Candidate discovery and selection use no LLM calls or language-model services. The “script-checked” label refers to deterministic Python geometry and set intersections over published ecological range maps. The curator page includes runnable generation commands; dependencies are in `_curator/scripts/requirements.txt`. Run the bank builder in a terminal. “Posted by” is visible throughout player rounds and photo popups; copyright, license, and observation links appear only after the round ends.
 
 Censored names and deferred credits reserve their fully revealed layout space from the first render, so cards do not grow when clues or end-of-round attribution appear. Hidden content is excluded from accessibility and interaction.

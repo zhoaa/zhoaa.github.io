@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const L=require('../logic.js');const context={window:{}};
+const L=require('../../logic.js');const context={window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../data.js'),'utf8'),context);
 const D=JSON.parse(JSON.stringify(context.window.NATURE_DATA));
 const countryIds=D.countries.map(c=>c.id),ids=D.puzzles.map(p=>p.id);
