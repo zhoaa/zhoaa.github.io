@@ -270,8 +270,9 @@ dialog.photo-dialog {
   justify-self: center;
   box-shadow: 0 2px 8px #153f3214;
 }
-.help-example-photo .photo-button { aspect-ratio: 1; }
-.help-example-photo .photo-info { display: block; }
+.help-example-photo .photo-button { aspect-ratio: 2; }
+.help-example-photo .photo-info { display: block; padding-block: .45rem; }
+.help-example-photo .photo-info .scientific { margin: .1rem 0 0; }
 .help-example-guesses {
   display: grid;
   gap: .3rem;
