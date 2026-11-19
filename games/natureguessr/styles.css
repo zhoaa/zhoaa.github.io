@@ -43,13 +43,15 @@ body{line-height:1.5}.photo-card{container-type:inline-size}.photo-grid{gap:clam
 
 .concealed-name{display:block;position:relative}.reserved-name,.credit-concealed{visibility:hidden;pointer-events:none;user-select:none}.concealed-name>.censored{position:absolute;inset:0;text-align:inherit}.deferred-credit{display:flex;flex-direction:column;flex:1}.deferred-credit .photo-license{margin-top:auto}
 
-/* Give the photo the space its credits will occupy when the round ends. */
+/* Keep the guessing crop square and shrink it slightly at the reveal. */
 #game-clues .photo-button {
-  --photo-ratio: 1.2;
-  height: calc(100cqi / var(--photo-ratio));
+  height: calc(100cqi / 1.08);
 }
 #game-clues .photo-card:has(.credit-concealed) .photo-button {
-  height: calc(100cqi / var(--photo-ratio) + var(--credit-row, 0px));
+  height: 100cqi;
+}
+.photo-credit .photo-attribution {
+  color: inherit;
 }
 #game-clues .deferred-credit:not(.credit-concealed) {
   min-height: var(--credit-row, 0px);
@@ -60,9 +62,6 @@ body{line-height:1.5}.photo-card{container-type:inline-size}.photo-grid{gap:clam
   flex: none;
   height: 0;
   overflow: hidden;
-}
-@media (max-width: 359px) {
-  #game-clues .photo-button { --photo-ratio: 1.5; }
 }
 
 dialog.photo-dialog {

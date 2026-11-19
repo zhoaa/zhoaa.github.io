@@ -78,7 +78,7 @@ python games/natureguessr/_curator/scripts/build_player.py
 
 **Preview as player** on a candidate or scheduled edition opens the public player interface with an isolated, session-scoped preview. It has no curator approval controls, does not approve or publish anything, and does not overwrite daily progress. **Exit player preview** returns to the curator desk. Preview tokens only work in the browser tab that created them, and expire after one day.
 
-Species cards have equal heights across all responsive rows. The zoom-in button and the image/card surface open an uncropped photo; attribution links remain separate links. Correct guesses trigger a brief confetti/result animation, disabled for reduced-motion preferences.
+Species cards have equal heights across all responsive rows. The image and its zoom icon open an uncropped photo; attribution links remain separate links. Correct guesses trigger a brief confetti/result animation, disabled for reduced-motion preferences.
 
 The proximity palette runs from blue through purple to red. The guess history and compass panel use the same labels as the How to play legend.
 
@@ -92,4 +92,4 @@ At window widths of 1100px and below, the composition centers the brand, game te
 
 Candidate discovery and selection use no LLM calls or language-model services. The “script-checked” label refers to deterministic Python geometry and set intersections over published ecological range maps. The curator page includes runnable generation commands; dependencies are in `_curator/scripts/requirements.txt`. Run the bank builder in a terminal. “Posted by” is visible on cards throughout player rounds, and the observer’s name becomes a profile link after a correct guess; copyright, license, and observation links appear only after the round ends.
 
-During guessing, the photographs fill the space used by credits after the round. At the end, the photos shrink to their regular crop and the details slide up into place. Reduced-motion preferences disable the animation. The uncropped preview displays the photo and its close control.
+During guessing, the photographs use a square crop. At the end, the photos shrink slightly and the details slide up into place. The copyright attribution links to the photo license. Reduced-motion preferences disable the animation. The uncropped preview displays the photo and its close control.
