@@ -271,7 +271,12 @@ dialog.photo-dialog {
   box-shadow: 0 2px 8px #153f3214;
 }
 .help-example-photo .photo-button { aspect-ratio: 2; }
-.help-example-photo .photo-info { display: block; padding-block: .45rem; }
+.help-example-photo .photo-info {
+  display: block;
+  flex: none;
+  padding: .25rem .45rem;
+}
+.help-example-photo .photo-info h3 { margin: 0; }
 .help-example-photo .photo-info .scientific { margin: .1rem 0 0; }
 .help-example-guesses {
   display: grid;
