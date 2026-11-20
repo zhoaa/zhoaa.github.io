@@ -124,17 +124,17 @@
   function roundScore(puzzle, guesses) { return guesses.length && guesses[guesses.length-1]===puzzle.countryId ? Math.max(0,6000-1000*guesses.length) : 0; }
   function proximityScore(wrongGuesses, feedback) {
     const closeStart = distanceBands.find(band => band.tone === 'close').minimum;
-    return Math.max(0, ...wrongGuesses.map(id => {
+    return wrongGuesses.reduce((total, id) => {
       const result = feedback[id];
-      if (!result) return 0;
+      if (!result) return total;
       const { tone } = distanceBand(result);
-      if (tone === 'borders') return 500;
+      if (tone === 'borders') return total + 500;
       if (tone === 'very-close') {
-        return Math.max(101, 499 - Math.floor(398 * result.km / (closeStart - 1)));
+        return total + Math.max(101, 499 - Math.floor(398 * result.km / (closeStart - 1)));
       }
-      if (tone === 'close') return Math.max(0, 100 - Math.floor(result.km - closeStart));
-      return 0;
-    }));
+      if (tone === 'close') return total + Math.max(0, 100 - Math.floor(result.km - closeStart));
+      return total;
+    }, 0);
   }
   return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,schedulePile,continentCount,rangePreference,roundScore,proximityScore};
 });
