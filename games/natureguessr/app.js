@@ -259,7 +259,7 @@
     const pins = puzzle.clues.flatMap((clue, index) => {
       const point = clue.observation.location;
       if (!Array.isArray(point) || point.length !== 2 || !point.every(Number.isFinite)) return [];
-      return [{ clue, number: index+1, x: longitude+offset(point[0]), y: -point[1] }];
+      return [{ clue, index, x: longitude+offset(point[0]), y: -point[1] }];
     });
     if (!pins.length) return '';
 
@@ -268,27 +268,27 @@
     )));
     const height = width * .56;
     const midY = height >= 180 ? 0 : Math.max(-90+height/2, Math.min(90-height/2, -latitude));
-    const pinSize = width / 55;
+    const pinSize = width / 70;
     const mapLeft = longitude - width/2, mapTop = midY - height/2;
     const markers = [];
     for (const pin of pins) {
-      let labelX = pin.x, labelY = pin.y;
+      let labelX = pin.x, labelY = pin.y - pinSize*1.8;
       // Fan out labels at clustered locations while keeping their exact endpoints.
       for (let step = 0; step < 25; step++) {
         const radius = step ? pinSize * (2.4 + Math.floor((step-1)/8)*2.4) : 0;
         const angle = (step-1) * Math.PI / 4;
         labelX = pin.x + Math.cos(angle)*radius;
-        labelY = pin.y + Math.sin(angle)*radius;
+        labelY = pin.y - pinSize*1.8 + Math.sin(angle)*radius;
         if (labelX < mapLeft+pinSize || labelX > mapLeft+width-pinSize ||
             labelY < mapTop+pinSize || labelY > mapTop+height-pinSize) continue;
-        if (markers.every(other => Math.hypot(other.labelX-labelX, other.labelY-labelY) >= pinSize*2.25)) break;
+        if (markers.every(other => Math.hypot(other.labelX-labelX, other.labelY-labelY) >= pinSize*2.7)) break;
       }
       markers.push({...pin, labelX, labelY});
     }
     const countriesPath = Object.entries(shapes).filter(([id]) => id !== puzzle.countryId).map(([,path]) => path).join('');
     const countryPath = shapes[puzzle.countryId] || '';
     return `<svg class="observation-map" viewBox="${longitude-width/2} ${midY-height/2} ${width} ${height}"
-      role="img" aria-label="${esc(puzzle.country)} map with ${pins.length} observation locations">
+      role="group" aria-label="${esc(puzzle.country)} map with ${pins.length} observation locations">
       <defs><g id="observation-map-land">
         <path class="map-land" d="${countriesPath}"></path>
         <path class="map-answer" d="${countryPath}"></path>
@@ -296,14 +296,21 @@
       <use href="#observation-map-land" x="-360"></use>
       <use href="#observation-map-land"></use>
       <use href="#observation-map-land" x="360"></use>
-      ${markers.filter(({x,y,labelX,labelY}) => x!==labelX || y!==labelY).map(({x,y,labelX,labelY}) =>
-        `<line class="observation-pin-line" x1="${x}" y1="${y}" x2="${labelX}" y2="${labelY}"></line>`).join('')}
-      ${markers.map(({ clue, number, labelX, labelY }) => `
-        <g class="observation-pin" transform="translate(${labelX} ${labelY})">
-          <title>${number}. ${esc(clue.name)}</title>
-          <circle r="${pinSize}" stroke-width="${pinSize*.22}"></circle>
-          <text text-anchor="middle" dominant-baseline="central" font-size="${pinSize*1.3}">${number}</text>
-        </g>`).join('')}
+      ${markers.map(({x,y,labelX,labelY}) =>
+        `<path class="observation-pin-tail" d="M${labelX-pinSize*.42} ${labelY+pinSize*.86}
+              H${labelX+pinSize*.42} L${x} ${y}Z"></path>`).join('')}
+      ${markers.map(({ clue, index, labelX, labelY }) => `
+        <a class="observation-pin" href="${esc(clue.observation.url)}"
+          data-photo-puzzle="${esc(puzzle.id)}" data-photo-index="${index}" data-name-visible="true"
+          data-x="${labelX}" data-y="${labelY}" aria-label="Zoom in on ${esc(clue.name)}">
+          <rect x="${labelX-pinSize}" y="${labelY-pinSize}" width="${pinSize*2}" height="${pinSize*2}"
+            rx="${pinSize*.25}"></rect>
+          <image x="${labelX-pinSize*.82}" y="${labelY-pinSize*.82}" width="${pinSize*1.64}" height="${pinSize*1.64}"
+            href="${esc(clue.observation.photo.url)}" preserveAspectRatio="xMidYMid slice"></image>
+        </a>`).join('')}
+      <g class="observation-map-preview" aria-hidden="true" hidden>
+        <rect></rect><image preserveAspectRatio="xMidYMid slice"></image>
+      </g>
     </svg>`;
   }
 
@@ -323,6 +330,37 @@
     </div>
     ${observationMap(puzzle)}
     <p class="set-result-score">${won?fmt(L.roundScore(puzzle,guesses))+' points · ':''}${guesses.length} ${guesses.length===1?'guess':'guesses'}</p>`;
+    const map = result.querySelector('.observation-map');
+    if (!map) return;
+    const preview = map.querySelector('.observation-map-preview');
+    const photo = preview.querySelector('image');
+    const frame = preview.querySelector('rect');
+    const bounds = map.viewBox.baseVal;
+    const size = bounds.width * .23;
+    const pad = bounds.width * .008;
+    for (const pin of map.querySelectorAll('.observation-pin')) {
+      const show = () => {
+        const x = Number(pin.dataset.x), y = Number(pin.dataset.y);
+        const left = Math.max(bounds.x+pad, Math.min(bounds.x+bounds.width-size-pad, x-size/2));
+        const above = y-size-pad*3;
+        const top = above >= bounds.y+pad ? above : Math.min(y+pad*3, bounds.y+bounds.height-size-pad);
+        preview.setAttribute('transform', `translate(${left} ${top})`);
+        photo.setAttribute('href', pin.querySelector('image').getAttribute('href'));
+        for (const [element, inset] of [[frame,0],[photo,pad]]) {
+          element.setAttribute('x', inset);
+          element.setAttribute('y', inset);
+          element.setAttribute('width', size-inset*2);
+          element.setAttribute('height', size-inset*2);
+        }
+        frame.setAttribute('rx', pad);
+        preview.removeAttribute('hidden');
+      };
+      const hide = () => preview.setAttribute('hidden', '');
+      pin.addEventListener('pointerenter', show);
+      pin.addEventListener('pointerleave', hide);
+      pin.addEventListener('focus', show);
+      pin.addEventListener('blur', hide);
+    }
   }
 
   function renderGame() {
@@ -449,7 +487,7 @@
     if(target.dataset.playerEdition&&!publicPlayer)startPlayerPreview(plan.schedule[target.dataset.playerEdition],target.dataset.playerEdition);
     if(target.dataset.previewEdition&&!publicPlayer){showView('game');startDaily(target.dataset.previewEdition);}
     if(target.dataset.country)chooseCountry(target.dataset.country);
-    if(target.dataset.photoPuzzle){const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('photo-dialog').showModal();}}
+    if(target.dataset.photoPuzzle){event.preventDefault();const c=puzzles.get(target.dataset.photoPuzzle)?.clues[+target.dataset.photoIndex];if(c){$('full-photo').src=c.observation.photo.url;$('full-photo').alt=(target.dataset.nameVisible==='true'?c.name:'Observation photo')+' · uncropped';$('photo-dialog').showModal();}}
     if(target.hasAttribute('data-close-dialog'))target.closest('dialog').close();
     if(target.id==='help-button')$('help-dialog').showModal();
     if(target.id==='report-button')$('report-dialog').showModal();

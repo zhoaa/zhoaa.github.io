@@ -406,6 +406,14 @@ main:has(.game-results:not([hidden])) .game-topline {
 }
 .observation-map .map-land { fill: var(--result-land); }
 .observation-map .map-answer { fill: var(--result-country); }
-.observation-pin circle { fill: var(--result-accent); stroke: white; }
-.observation-pin text { fill: white; font-weight: 800; }
-.observation-pin-line { stroke: var(--result-accent); stroke-width: 1.25px; vector-effect: non-scaling-stroke; }
+.observation-pin { cursor: zoom-in; }
+.observation-pin rect,
+.observation-map-preview rect {
+  fill: white;
+  stroke: var(--result-accent);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.observation-pin:is(:hover, :focus-visible) rect { stroke-width: 2px; }
+.observation-pin-tail { fill: var(--result-accent); pointer-events: none; }
+.observation-map-preview { pointer-events: none; }
