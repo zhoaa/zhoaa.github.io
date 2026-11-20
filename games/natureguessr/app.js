@@ -20,7 +20,7 @@
   const fmt=n=>Math.round(n).toLocaleString();
   function toast(message) { $('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500); }
   function scheduledDay(id) { return Object.keys(plan.schedule).find(day=>plan.schedule[day].includes(id)); }
-  function status(id) { return plan.rejected.includes(id)?'rejected':plan.approved.includes(id)?'approved':'new'; }
+  function status(id) { return plan.approved.includes(id)?'approved':'new'; }
   function persist() {
     plan=L.validatePlan(plan,[...puzzles.keys()]);
     try { localStorage.setItem(PLAN_KEY,JSON.stringify(plan)); } catch { toast('Browser storage is unavailable. Export your curation to keep it.'); }
@@ -28,22 +28,24 @@
   }
   try { const saved=publicPlayer?null:localStorage.getItem(PLAN_KEY);if(saved)plan=L.validatePlan(JSON.parse(saved),[...puzzles.keys()]); } catch { toast('Your saved curation could not be loaded. Import a backup if you have one.'); }
   for (const [day,ids] of Object.entries(window.NATURE_PUBLISHED_SCHEDULE||{})) {
-    if (!plan.schedule[day] && ids.length===3 && ids.every(id=>puzzles.has(id))) {
-      plan.schedule[day]=ids;for(const id of ids){if(!plan.approved.includes(id))plan.approved.push(id);plan.rejected=plan.rejected.filter(x=>x!==id);}
+    if (!plan.schedule[day] && ids.length===3 && ids.every(id=>puzzles.has(id)&&!plan.rejected.includes(id))) {
+      plan.schedule[day]=ids;for(const id of ids){if(!plan.approved.includes(id))plan.approved.push(id);}
     }
   }
   if (!publicPlayer) plan = L.validatePlan(plan, puzzles.keys());
   function approve(id) {
     if(puzzles.get(id)?.archived){toast('This set no longer meets the country-name rule. Choose another set.');return;}
-    if(scheduledDay(id)||plan.queue.includes(id)) return;
-    plan.rejected=plan.rejected.filter(x=>x!==id);if(!plan.approved.includes(id))plan.approved.push(id);plan.queue.push(id);
+    if(plan.rejected.includes(id)||scheduledDay(id)||plan.queue.includes(id)) return;
+    if(!plan.approved.includes(id))plan.approved.push(id);plan.queue.push(id);
     persist();toast('Added to the pile.');
   }
   function reject(id) {
     if(scheduledDay(id)){toast('Remove this set from the schedule before rejecting it.');return;}
     plan.queue=plan.queue.filter(x=>x!==id);plan.approved=plan.approved.filter(x=>x!==id);
-    if(plan.rejected.includes(id))plan.rejected=plan.rejected.filter(x=>x!==id);else plan.rejected.push(id);
+    if(!plan.rejected.includes(id))plan.rejected.push(id);
+    if ($('detail-dialog').open) $('detail-dialog').close();
     persist();
+    toast('Set rejected and removed.');
   }
   function showView(next) {
     view=next;
@@ -116,13 +118,14 @@
     const archived=D.puzzles.length-activePuzzles.length;
     $('bank-archive-note').hidden=!archived;
     $('bank-archive-note').textContent=archived+' older sets were archived because a species name gives away the answer country. Saved records are retained; replace archived sets in the pile or scheduled games.';
-    $('bank-count').textContent=activePuzzles.length;$('all-count').textContent=activePuzzles.length;
-    $('bank-country-count').textContent=new Set(activePuzzles.map(p=>p.countryId)).size+' countries · 5 observations per set';
+    const candidates = activePuzzles.filter(p => !plan.rejected.includes(p.id));
+    $('bank-count').textContent=candidates.length;$('all-count').textContent=candidates.length;
+    $('bank-country-count').textContent=new Set(candidates.map(p=>p.countryId)).size+' countries · 5 observations per set';
     const query=L.normalize($('bank-search').value);
-    const shown=activePuzzles.filter(p=>(filter==='all'||status(p.id)===filter)&&(!query||L.normalize(p.country+' '+p.clues.map(c=>c.name+' '+c.scientific).join(' ')).includes(query)));
+    const shown=candidates.filter(p=>(filter==='all'||status(p.id)===filter)&&(!query||L.normalize(p.country+' '+p.clues.map(c=>c.name+' '+c.scientific).join(' ')).includes(query)));
     $('candidate-list').innerHTML=shown.map(p=>{
       const state=status(p.id),queued=plan.queue.includes(p.id),scheduled=scheduledDay(p.id);
-      return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id} · ${selectionCountLabel(counts.country.get(p.countryId))}${queued?' · In the pile':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" ${queued||scheduled?'disabled':''}>${scheduled?'Scheduled':queued?'In the pile':state==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">${state==='rejected'?'Restore':'Reject'}</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="selection-count">${selectionCountLabel(counts.species.get(c.taxonId))}</small><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
+      return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id} · ${selectionCountLabel(counts.country.get(p.countryId))}${queued?' · In the pile':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" ${queued||scheduled?'disabled':''}>${scheduled?'Scheduled':queued?'In the pile':state==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">Reject</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="selection-count">${selectionCountLabel(counts.species.get(c.taxonId))}</small><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
     }).join('');
     $('bank-empty').hidden=shown.length>0;installPhotoFallbacks($('candidate-list'));$('queue-count').textContent=plan.queue.length;
   }
@@ -130,7 +133,7 @@
     const p=puzzles.get(id);
     const counts = selectionCounts();
     $('detail-title').textContent=p.country+' · '+selectionCountLabel(counts.country.get(p.countryId))+' · '+p.id;
-    $('detail-body').innerHTML=`<div class="photo-grid">${photoCards(p)}</div><section class="detail-evidence"><h3>Why this set was offered</h3><p>All five observation searches start with <strong>place_id=${p.placeId}</strong> (${esc(p.country)}). Their photo and observation licenses are individually restricted to CC0 or CC BY. Public coordinates and country tags are checked as safeguards after that country-first selection.</p><p><strong>Modeled country intersection: ${esc(p.country)} only.</strong> Every country with non-trivial modeled land overlap counts as supporting a species. The five country-support sets intersect in one country; they need not all occur at the same spot within it.</p><div class="table-wrap"><table class="evidence-table"><thead><tr><th>Clue</th><th>Country support in the model</th><th>Source & selection</th></tr></thead><tbody>${p.clues.map((c,i)=>`<tr><td>${esc(c.name)}<br><span class="scientific">${esc(c.scientific)}</span><small class="selection-count">${selectionCountLabel(counts.species.get(c.taxonId))}</small></td><td><details><summary>${c.supportedCountries.length} ${c.supportedCountries.length===1?'country':'countries'}</summary>${c.supportedCountries.map(id=>esc(countries.get(id)?.name||id)).join(', ')}</details></td><td><a href="${esc(c.observation.query)}" target="_blank" rel="noopener noreferrer">Country-filtered photo query</a><br><a href="${esc(c.rangeUrl)}" target="_blank" rel="noopener noreferrer">Modeled range</a><br><span class="small-copy">Observed ${esc(c.observation.date)} · ${esc(c.observation.location[1].toFixed(4))}, ${esc(c.observation.location[0].toFixed(4))}<br>Observation data: ${licenseName(c.observation.license)} · Model ${esc(c.modelVersion)}</span></td></tr>`).join('')}</tbody></table></div><p>Models are incomplete. A singleton in this index is not proof that no other country has these species. Check distribution surprises, identification quality, and whether common names give away the answer before approval.</p><details><summary>Upstream species-selection queries</summary><ul>${p.selectionQueries.map((q,i)=>`<li><a href="${esc(q)}" target="_blank" rel="noopener noreferrer">${esc(p.clues[i].category)} candidates · place_id=${p.placeId}</a></li>`).join('')}</ul></details><div class="review-actions"><button class="button secondary" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary" data-action="playtest" data-id="${p.id}">Playtest this set</button><button class="button primary" data-action="approve" data-id="${p.id}">Approve & add to pile</button><button class="button danger" data-action="reject" data-id="${p.id}">${status(id)==='rejected'?'Restore to unreviewed':'Reject this set'}</button></div></section>`;
+    $('detail-body').innerHTML=`<div class="photo-grid">${photoCards(p)}</div><section class="detail-evidence"><h3>Why this set was offered</h3><p>All five observation searches start with <strong>place_id=${p.placeId}</strong> (${esc(p.country)}). Their photo and observation licenses are individually restricted to CC0 or CC BY. Public coordinates and country tags are checked as safeguards after that country-first selection.</p><p><strong>Modeled country intersection: ${esc(p.country)} only.</strong> Every country with non-trivial modeled land overlap counts as supporting a species. The five country-support sets intersect in one country; they need not all occur at the same spot within it.</p><div class="table-wrap"><table class="evidence-table"><thead><tr><th>Clue</th><th>Country support in the model</th><th>Source & selection</th></tr></thead><tbody>${p.clues.map((c,i)=>`<tr><td>${esc(c.name)}<br><span class="scientific">${esc(c.scientific)}</span><small class="selection-count">${selectionCountLabel(counts.species.get(c.taxonId))}</small></td><td><details><summary>${c.supportedCountries.length} ${c.supportedCountries.length===1?'country':'countries'}</summary>${c.supportedCountries.map(id=>esc(countries.get(id)?.name||id)).join(', ')}</details></td><td><a href="${esc(c.observation.query)}" target="_blank" rel="noopener noreferrer">Country-filtered photo query</a><br><a href="${esc(c.rangeUrl)}" target="_blank" rel="noopener noreferrer">Modeled range</a><br><span class="small-copy">Observed ${esc(c.observation.date)} · ${esc(c.observation.location[1].toFixed(4))}, ${esc(c.observation.location[0].toFixed(4))}<br>Observation data: ${licenseName(c.observation.license)} · Model ${esc(c.modelVersion)}</span></td></tr>`).join('')}</tbody></table></div><p>Models are incomplete. A singleton in this index is not proof that no other country has these species. Check distribution surprises, identification quality, and whether common names give away the answer before approval.</p><details><summary>Upstream species-selection queries</summary><ul>${p.selectionQueries.map((q,i)=>`<li><a href="${esc(q)}" target="_blank" rel="noopener noreferrer">${esc(p.clues[i].category)} candidates · place_id=${p.placeId}</a></li>`).join('')}</ul></details><div class="review-actions"><button class="button secondary" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary" data-action="playtest" data-id="${p.id}">Playtest this set</button><button class="button primary" data-action="approve" data-id="${p.id}">Approve & add to pile</button><button class="button danger" data-action="reject" data-id="${p.id}">Reject this set</button></div></section>`;
     installPhotoFallbacks($('detail-body'));$('detail-dialog').showModal();alignPhotoRows($('detail-body'));
   }
   function canUnschedule(day) {
@@ -497,7 +500,20 @@
     });
     $('import-file').addEventListener('change',async event=>{
       const file=event.target.files[0];if(!file)return;
-      try{const imported=L.validatePlan(JSON.parse(await file.text()),[...puzzles.keys()]);plan=imported;persist();toast('Saved curation imported.');}catch(e){toast(e.message);}event.target.value='';
+      try {
+        const imported = L.validatePlan(JSON.parse(await file.text()), puzzles.keys());
+        const rejected = new Set([...plan.rejected, ...imported.rejected]);
+        if (Object.values(imported.schedule).flat().some(id => rejected.has(id))) {
+          throw new Error('This backup schedules a permanently rejected set.');
+        }
+        imported.rejected = [...rejected];
+        imported.approved = imported.approved.filter(id => !rejected.has(id));
+        imported.queue = imported.queue.filter(id => !rejected.has(id));
+        plan = imported;
+        persist();
+        toast('Saved curation imported.');
+      } catch(e) { toast(e.message); }
+      event.target.value='';
     });
   }
   document.addEventListener('click',event=>{
