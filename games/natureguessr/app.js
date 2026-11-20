@@ -118,15 +118,16 @@
   }
   function renderQueue() {
     if(publicPlayer)return;
-    const countryIds = [...new Set(plan.queue.map(id => puzzles.get(id)).filter(p => !p.archived).map(p => p.countryId))];
+    const eligible = plan.queue.map(id => puzzles.get(id)).filter(p => !p.archived);
+    const countryCount = new Set(eligible.map(p => p.countryId)).size;
     $('queue-count').textContent=plan.queue.length;
-    $('queue-meta').textContent=plan.queue.length+' sets · '+countryIds.length+' countries';
+    $('queue-meta').textContent=plan.queue.length+' sets · '+countryCount+' countries';
     $('queue-list').innerHTML=plan.queue.map(id=>{
       const p=puzzles.get(id);
       return `<li class="queue-item"><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-remove-set="${id}" aria-label="Remove ${esc(p.country)} set ${id}">Remove</button></div></li>`;
     }).join('');
     $('queue-empty').hidden=plan.queue.length>0;
-    $('schedule-button').disabled=countryIds.length<3||L.continentCount(countryIds)<2;
+    $('schedule-button').disabled=countryCount<3||L.continentCount(eligible)<2;
     const editions=Object.entries(plan.schedule).sort(([a],[b])=>a.localeCompare(b));
     $('schedule-list').innerHTML=editions.length?editions.map(([day,ids])=>`<div class="edition"><strong>${esc(day)}</strong>${ids.map((id,i)=>`<span>${i+1}. ${esc(puzzles.get(id).country)}${puzzles.get(id).archived?' · Needs replacement':''}</span>`).join('')}<button class="button ghost small" data-player-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview as player</button><button class="button ghost small" data-preview-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Playtest game</button>${canUnschedule(day)?`<button class="button ghost small" data-unschedule="${day}">Return sets to pile</button>`:''}</div>`).join(''):'<p class="small-copy">No games scheduled yet.</p>';
   }

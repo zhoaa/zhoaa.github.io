@@ -42,7 +42,7 @@
     }
     return {version:1,approved:[...approved],rejected:[...rejected],queue:[...new Set(value.queue)].filter(id => !allocated.has(id)),schedule:JSON.parse(JSON.stringify(value.schedule))};
   }
-  // These are the countries supported by the curator's candidate generator.
+  // Older banks predate the continent field.
   const continents = {
     ZAF: 'Africa', MDG: 'Africa', AUS: 'Oceania', NZL: 'Oceania',
     JPN: 'Asia', TWN: 'Asia', LKA: 'Asia', IDN: 'Asia', IND: 'Asia',
@@ -51,8 +51,8 @@
     ESP: 'Europe',
   };
 
-  function continentCount(countryIds) {
-    return new Set(countryIds.map(id => continents[id]).filter(Boolean)).size;
+  function continentCount(puzzles) {
+    return new Set(puzzles.map(p => p.continent || continents[p.countryId]).filter(Boolean)).size;
   }
 
   function shuffle(items, random) {
@@ -85,7 +85,7 @@
         for (let j = i + 1; j < available.length - 1; j++) {
           for (let k = j + 1; k < available.length; k++) {
             const trio = [available[i], available[j], available[k]];
-            const diversity = continentCount(trio);
+            const diversity = continentCount(trio.map(id => puzzles.get(buckets.get(id)[0])));
             if (diversity < 2) continue;
             // Sampling accepted draws directly gives the same odds as rerolling,
             // even when the only viable draws span two continents.

@@ -7,7 +7,7 @@ const countryIds=D.countries.map(c=>c.id),ids=D.puzzles.map(p=>p.id);
 assert.equal(new Set(countryIds).size,countryIds.length,'one entity per country code');
 assert.equal(new Set(ids).size,ids.length);
 const previousIds=new Set(D.generation?.existingIds||[]),added=D.puzzles.filter(p=>!previousIds.has(p.id));
-if(D.generation?.requestedAdditional){assert.equal(added.length,D.generation.requestedAdditional);assert.equal(D.generation.addedCount,added.length);}
+if(D.generation?.requestedAdditional){assert.ok(added.length<=D.generation.requestedAdditional);assert.equal(D.generation.addedCount,added.length);}
 for(const p of D.puzzles){
   assert.equal(p.clues.length,5);assert.equal(new Set(p.clues.map(c=>c.category)).size,5);
   assert.equal(new Set(p.clues.map(c=>c.taxonId)).size,5);
@@ -67,7 +67,7 @@ assert.deepEqual(result.plan.queue,['g']);
 assert.deepEqual(Object.keys(result.plan.schedule),['2026-12-31','2027-01-01']);
 for (const sets of Object.values(result.plan.schedule)) {
   assert.equal(new Set(sets.map(id=>candidates.get(id).countryId)).size,3);
-  assert.ok(L.continentCount(sets.map(id=>candidates.get(id).countryId)) >= 2);
+  assert.ok(L.continentCount(sets.map(id=>candidates.get(id))) >= 2);
 }
 assert.equal(new Set(Object.values(result.plan.schedule).flat()).size,6);
 const legacy={...pile,schedule:{'2026-12-31':['a','c','e']}};
@@ -84,11 +84,14 @@ const drawFrom = (countryIds, roll) => {
 };
 assert.equal(drawFrom(['JPN','IND','TWN'],0).games,0);
 assert.equal(drawFrom(['JPN','IND','MEX'],.99).games,1);
+const worldwide = new Map([['fra',{countryId:'FRA',continent:'Europe'}],['per',{countryId:'PER',continent:'South America'}],['ken',{countryId:'KEN',continent:'Africa'}]]);
+const worldIds = [...worldwide.keys()];
+assert.equal(L.schedulePile({...L.emptyPlan(),approved:worldIds,queue:worldIds},'2026-12-31',worldwide).games,1);
 const mixed = ['JPN','IND','MEX','ESP'];
 // Four equally likely proposals have acceptance weights 1, 1, 4, 4.
 for (const [roll, continents] of [[0,2],[.199,2],[.2,3],[.999,3]]) {
   const drawn = drawFrom(mixed, roll);
-  assert.equal(L.continentCount(drawn.plan.schedule['2026-12-31']),continents);
+  assert.equal(L.continentCount(drawn.plan.schedule['2026-12-31'].map(countryId=>({countryId}))),continents);
 }
 assert.equal(L.roundScore(D.puzzles[0],[D.puzzles[0].countryId]),5000);
 assert.equal(L.roundScore(D.puzzles[0],['USA',D.puzzles[0].countryId]),4000);

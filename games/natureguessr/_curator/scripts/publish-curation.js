@@ -42,11 +42,11 @@ const day = L.today();
 const used = new Set(Object.entries(plan.schedule).filter(([date]) => date < day).flatMap(([, ids]) => ids));
 for (const [date, ids] of Object.entries(plan.schedule)) {
   if (date < day) continue;
-  const countries = ids.map(id => byId.get(id).countryId);
-  if (new Set(countries).size !== 3) {
+  const sets = ids.map(id => byId.get(id));
+  if (new Set(sets.map(p => p.countryId)).size !== 3) {
     throw new Error(`The game for ${date} needs three different countries. Return its sets to the pile and redraw it.`);
   }
-  if (L.continentCount(countries) < 2) {
+  if (L.continentCount(sets) < 2) {
     throw new Error(`The game for ${date} needs at least two continents. Return its sets to the pile and redraw it.`);
   }
   if (ids.some(id => used.has(id))) {

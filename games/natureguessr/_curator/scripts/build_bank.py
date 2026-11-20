@@ -3,7 +3,7 @@
 Usage: python build_bank.py --work-dir /path/to/cache-and-natural-earth
 Requires numpy, scipy, shapely, pyproj. No credentials are used.
 """
-import argparse, hashlib, itertools, json, math, pathlib, time, urllib.parse, urllib.request
+import argparse, hashlib, itertools, json, math, pathlib, random, time, unicodedata, urllib.parse, urllib.request
 import numpy as np
 from scipy.spatial import cKDTree
 from shapely import make_valid, set_precision, STRtree
@@ -11,13 +11,17 @@ from shapely.geometry import shape, Point, LineString
 from shapely.ops import nearest_points, transform, unary_union
 from pyproj import Geod, Transformer
 
-parser=argparse.ArgumentParser();parser.add_argument('--work-dir',type=pathlib.Path,required=True)
-parser.add_argument('--countries',type=int,default=16)
-parser.add_argument('--add',type=int,default=0,help='Append this many new candidates while preserving existing IDs')
-parser.add_argument('--per-country',type=int,default=2);args=parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument('--work-dir', type=pathlib.Path, required=True)
+parser.add_argument('--countries', type=int, help='Limit the shuffled country index (default: all)')
+parser.add_argument('--seed', type=int, help='Repeat a particular country order')
+parser.add_argument('--add', type=int, default=0, help='Append this many new candidates while preserving existing IDs')
+parser.add_argument('--per-country', type=int, default=2)
+args = parser.parse_args()
+if (args.countries is not None and args.countries < 1) or args.per_country < 1 or args.add < 0:
+    parser.error('--countries and --per-country must be positive and --add must be nonnegative')
 WORK=args.work_dir;WORK.mkdir(exist_ok=True,parents=True);CACHE=WORK/'cache';CACHE.mkdir(exist_ok=True)
 OUT=pathlib.Path(__file__).resolve().parents[1];G=Geod(ellps='WGS84');last_api=0
-COUNTRY_NAMES=['South Africa','Australia','New Zealand','Japan','Madagascar','Taiwan','Sri Lanka','Mexico','Brazil','Ecuador','Chile','Costa Rica','Indonesia','India','Spain','Colombia'][:args.countries]
 GROUPS=[('Bird','Aves'),('Mammal','Mammalia'),('Reptile / amphibian','Reptilia,Amphibia'),('Plant','Plantae'),('Fungus','Fungi')]
 ALLOWED={'cc0','cc-by'}
 
@@ -51,7 +55,7 @@ world_path=WORK/'world-10m.json'
 if not world_path.exists():
     data=get('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson');world_path.write_text(json.dumps(data))
 features=json.loads(world_path.read_text())['features']
-countries=[];geometries=[];simple=[];grouped={}
+countries=[];geometries=[];simple=[];grouped={};country_aliases=[]
 for f in features:
     p=f['properties'];iso=p.get('ISO_A3_EH',p['ADM0_A3'])
     # ISO country/territory codes, with descriptive ADMIN names. No centroid guessing.
@@ -63,22 +67,48 @@ for iso,parts in grouped.items():
     # territories). Union them once, so guesses and uniqueness use one entity.
     p,_=max(parts,key=lambda pair:pair[1].area)
     s=set_precision(make_valid(unary_union([pair[1] for pair in parts])),.000001)
-    countries.append({'id':iso,'name':p['ADMIN'],'iso2':p.get('ISO_A2_EH',p.get('ISO_A2','')),'label':[p['LABEL_X'],p['LABEL_Y']]})
+    countries.append({'id':iso,'name':p['ADMIN'],'iso2':p.get('ISO_A2_EH',p.get('ISO_A2','')),'label':[p['LABEL_X'],p['LABEL_Y']],'continent':p['CONTINENT']})
+    names = [p.get(key) for key in ('ADMIN', 'NAME', 'NAME_LONG', 'NAME_EN', 'FORMAL_EN')]
+    country_aliases.append(list(dict.fromkeys(name for name in names if name and name != '-99')))
     geometries.append(s);simple.append(s.simplify(.015,preserve_topology=True))
-tree=STRtree(simple);by_name={c['name']:i for i,c in enumerate(countries)}
-# Match ordinary country labels to Natural Earth's country entities.
-by_name['Taiwan']=next(i for i,c in enumerate(countries) if c['id']=='TWN')
+tree = STRtree(simple)
+exact_tree = STRtree(geometries)
+country_order = list(range(len(countries)))
+random.Random(args.seed).shuffle(country_order)
+country_order = country_order[:args.countries]
+
+def country_place(ci):
+    aliases = country_aliases[ci]
+    def normalized(name):
+        return ''.join(c for c in unicodedata.normalize('NFKD', name.casefold()) if c.isalnum())
+    accepted = {normalized(name) for name in aliases}
+    for alias in aliases:
+        data, _ = api('places/autocomplete', {'q': alias, 'per_page': 10})
+        matches = {
+            place['id']: place
+            for place in (data or {}).get('results', [])
+            if place.get('admin_level') == 0
+            and any(normalized(place.get(key) or '') in accepted for key in ('name', 'display_name'))
+        }
+        if len(matches) == 1:
+            return next(iter(matches.values()))
+        if len(matches) > 1:
+            return None
+    return None
+
 range_index={};bank=[];diagnostics=[];feedback={}
 NAME_RULES={'South Africa':['southafrica','suidafrika'],'Australia':['australia'],'New Zealand':['newzealand','novaezeland','novazeland','aotearoa'],'Japan':['japan','japon','nippon'],'Madagascar':['madagas','malagasy'],'Taiwan':['taiwan','formosa'],'Sri Lanka':['srilanka','ceylon'],'Mexico':['mexic'],'Brazil':['brazil','brasil'],'Ecuador':['ecuador'],'Chile':['chile','chilensis'],'Costa Rica':['costaric'],'Indonesia':['indonesia'],'India':['india','indica','indicus','indicum'],'Spain':['spain','spanish','hispan'],'Colombia':['colombia','colombian']}
 def name_gives_country(taxon,name):
-    import unicodedata,re
+    import re
     text=' '.join([taxon.get('preferred_common_name',taxon.get('name','')),taxon.get('name',''),taxon.get('scientific','')])
     text=re.sub('[^a-z]','',unicodedata.normalize('NFKD',text).encode('ascii','ignore').decode().lower())
     return any(token in text for token in NAME_RULES.get(name,[name.lower().replace(' ','')]))
 if args.add and (OUT/'data.js').exists():
     previous=json.loads((OUT/'data.js').read_text().removeprefix('window.NATURE_DATA = ').strip().removesuffix(';'))
     bank=previous['puzzles'];feedback=previous['feedback']
+    continents={c['id']:c['continent'] for c in countries}
     for p in bank:
+        if p['countryId'] in continents: p['continent']=continents[p['countryId']]
         if any(name_gives_country(c,p['country']) for c in p['clues']):
             p['archived']=True;p['archiveReason']='A species name includes the answer country or its adjective.'
 initial_count=len(bank);existing_ids=[p['id'] for p in bank];target_count=initial_count+args.add if args.add else None
@@ -180,12 +210,12 @@ def save():
     (OUT/'data.js').write_text('window.NATURE_DATA = '+json.dumps(data,ensure_ascii=False,separators=(',',':'))+';\n')
     (WORK/'bank.json').write_text(json.dumps(data,ensure_ascii=False));(WORK/'diagnostics.json').write_text(json.dumps(diagnostics))
 
-for name in COUNTRY_NAMES:
+for ci in country_order:
     if target_count is not None and len(bank)>=target_count:break
+    country = countries[ci]
+    name = country['name']
     print('COUNTRY',name,flush=True)
-    ci=by_name[name];country=countries[ci]
-    places,_=api('places/autocomplete',{'q':name,'per_page':10})
-    place=next((p for p in (places or {}).get('results',[]) if p.get('admin_level')==0 and (p.get('name')==name or p.get('display_name')==name)),None)
+    place = country_place(ci)
     if not place:diagnostics.append({'country':name,'error':'No unambiguous country place'});save();continue
     # COUNTRY FIRST: this base is shared by every candidate and photo query.
     base={'place_id':place['id'],'quality_grade':'research','photos':'true','captive':'false','photo_license':'cc0,cc-by','license':'cc0,cc-by','geoprivacy':'open','taxon_geoprivacy':'open','acc_below':100,'hrank':'species'}
@@ -203,7 +233,12 @@ for name in COUNTRY_NAMES:
                 pool.append({'category':category,'taxon':t,'localCount':x['count'],'range':r})
             if len(pool)>=6:break
         pools.append(pool);print(' ',category,len(pool),'modeled candidates',flush=True)
-    if any(not p for p in pools):diagnostics.append({'country':name,'error':'Missing category/range coverage','pools':[len(p) for p in pools]});save();continue
+        if not pool:
+            diagnostics.append({'country':name,'error':'Missing category/range coverage','category':category,'pools':[len(p) for p in pools]})
+            break
+    if len(pools) != len(GROUPS) or not pools[-1]:
+        save()
+        continue
     combos=[]
     for combo in itertools.product(*pools):
         overlap=set.intersection(*(c['range']['countries'] for c in combo))
@@ -213,38 +248,46 @@ for name in COUNTRY_NAMES:
             endemic=sum(len(x['range']['countries'])==1 for x in combo)
             score=(abs(endemic-2),-sum(math.log(1+x['localCount']) for x in combo))
             combos.append((score,combo))
-    combos.sort(key=lambda c:c[0]);used=[tuple(c['taxonId'] for c in p['clues']) for p in bank if p['country']==name];made=0;obs_cache={}
+    combos.sort(key=lambda c:c[0]);used=[tuple(c['taxonId'] for c in p['clues']) for p in bank if p['countryId']==country['id']];made=0;obs_cache={}
+    pool_ids = [set(x['taxon']['id'] for x in pool) for pool in pools]
+    unavailable = set()
     for _,combo in combos:
         ids=tuple(x['taxon']['id'] for x in combo)
+        if unavailable.intersection(ids):continue
         if any(sum(a!=b for a,b in zip(ids,old))<2 for old in used):continue
         clues=[]
         for x in combo:
             tid=x['taxon']['id']
             if tid not in obs_cache:obs_cache[tid]=observation(x['taxon'],base,ci)
             o=obs_cache[tid]
-            if not o:break
+            if not o:
+                unavailable.add(tid)
+                break
             r=x['range'];t=x['taxon']
             clues.append({'category':x['category'],'taxonId':tid,'name':t.get('preferred_common_name',t['name']),'scientific':t['name'],
                 'localCount':x['localCount'],'supportedCountries':sorted(countries[i]['id'] for i in r['countries']),
                 'rangeUrl':f'https://inaturalist-open-data.s3.us-east-1.amazonaws.com/geomodel/geojsons/latest/{tid}.geojson','modelVersion':r['version'],'observation':o})
-        if len(clues)<5:continue
+        if len(clues)<5:
+            if any(ids <= unavailable for ids in pool_ids):
+                break
+            continue
         # Final exact-boundary uniqueness check is separate from the upstream
         # country-first source restriction. Reject, never silently weaken it.
         exact=set(range(len(countries)))
         for index,x in enumerate(combo):
             r=x['range']
-            if 'exactCountries' not in r:r['exactCountries']={int(i) for i in STRtree(geometries).query(r['shape'],predicate='intersects') if area(r['shape'].intersection(geometries[int(i)]))>.01}
+            if 'exactCountries' not in r:r['exactCountries']={int(i) for i in exact_tree.query(r['shape'],predicate='intersects') if area(r['shape'].intersection(geometries[int(i)]))>.01}
             present=r['exactCountries']
             clues[index]['supportedCountries']=sorted(countries[i]['id'] for i in present)
             exact.intersection_update(present)
         if exact!={ci}:continue
         puzzle={'id':country['id'].lower()+'-'+hashlib.sha256(','.join(map(str,ids)).encode()).hexdigest()[:8],
-            'countryId':country['id'],'country':name,'placeId':place['id'],'clues':clues,'matchingCountries':[country['id']],
+            'countryId':country['id'],'country':name,'continent':country['continent'],'placeId':place['id'],'clues':clues,'matchingCountries':[country['id']],
             'selectionQueries':queries,'uniqueness':'unique-in-modeled-country-index'}
         bank.append(puzzle);used.append(ids);made+=1
         if country['id'] not in feedback:feedback[country['id']]=country_feedback(ci)
         save();print(' ACCEPTED',puzzle['id'],flush=True)
         if made>=args.per_country or (target_count is not None and len(bank)>=target_count):break
-    diagnostics.append({'country':name,'accepted':made,'uniqueCombinations':len(combos),'pools':[len(p) for p in pools]});save()
+    diagnostics.append({'country':name,'accepted':made,'error':None if made else 'No suitable set','uniqueCombinations':len(combos),'pools':[len(p) for p in pools]});save()
 print('DONE',len(bank),'puzzles;',len(bank)-initial_count,'added',flush=True)
 if target_count is not None and len(bank)<target_count:raise SystemExit(f'Only {len(bank)-initial_count} new eligible puzzles found; requested {args.add}.')
