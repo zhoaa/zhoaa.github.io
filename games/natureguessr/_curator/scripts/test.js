@@ -110,7 +110,8 @@ const proximity = {
   farther: {km: 2400},
   furthest: {km: 9000},
 };
-assert.equal(L.proximityScore(misses.slice(0, 4), proximity), 0);
+assert.equal(L.proximityScore([], proximity), 0);
+assert.equal(L.proximityScore(misses.slice(0, 4), proximity), 500);
 assert.equal(L.proximityScore(misses, proximity), 500);
 assert.equal(L.proximityScore(misses, {...proximity, border: {km: 799}}), 438);
 const pointsAt = km => L.proximityScore(misses, {...proximity, border: {km}, near: {km: 2000}, far: {km: 2000}});

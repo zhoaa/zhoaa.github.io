@@ -471,7 +471,9 @@
       const puzzle = puzzles.get(id);
       const guesses = game.rounds[index].guesses;
       const solvedPoints = L.roundScore(puzzle, guesses);
-      const points = solvedPoints || (done ? L.proximityScore(guesses, D.feedback[puzzle.countryId]) : 0);
+      const wrongGuesses = solvedPoints ? guesses.slice(0, -1) : guesses;
+      const bonus = done ? L.proximityScore(wrongGuesses, D.feedback[puzzle.countryId]) : 0;
+      const points = solvedPoints + bonus;
       return { puzzle, guesses, points };
     });
     const score = rounds.reduce((sum, round) => sum + round.points, 0);
