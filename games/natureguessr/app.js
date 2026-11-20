@@ -144,7 +144,7 @@
     $('queue-meta').textContent=plan.queue.length+' sets · '+countryCount+' countries';
     $('queue-list').innerHTML=plan.queue.map(id=>{
       const p=puzzles.get(id);
-      return `<li class="queue-item"><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-remove-set="${id}" aria-label="Remove ${esc(p.country)} set ${id}">Remove</button></div></li>`;
+      return `<li class="queue-item"><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small><p class="pile-species">${p.clues.map(clue=>esc(clue.name)).join(', ')}</p></div><div class="queue-actions"><button data-remove-set="${id}" aria-label="Remove ${esc(p.country)} set ${id}">Remove</button></div></li>`;
     }).join('');
     $('queue-empty').hidden=plan.queue.length>0;
     $('schedule-button').disabled=countryCount<3||L.continentCount(eligible)<2;

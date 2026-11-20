@@ -450,3 +450,5 @@ main:has(.game-results:not([hidden])) .game-topline {
   color: var(--muted);
   font-size: .75rem;
 }
+
+.pile-species { margin-top: .35rem; font-size: .85rem; line-height: 1.45; overflow-wrap: anywhere; }
