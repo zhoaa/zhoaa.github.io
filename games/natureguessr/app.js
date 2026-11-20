@@ -170,7 +170,30 @@
     $('bank-count').textContent=candidates.length;$('all-count').textContent=candidates.length;
     $('bank-country-count').textContent=new Set(candidates.map(p=>p.countryId)).size+' countries · 5 observations per set';
     const query=L.normalize($('bank-search').value);
-    const shown=candidates.filter(p=>(filter==='all'||status(p.id)===filter)&&(!query||L.normalize(p.country+' '+p.clues.map(c=>c.name+' '+c.scientific).join(' ')).includes(query)));
+    const countryFilter = $('bank-country').value;
+    const unusedCountry = $('bank-unused-country').checked;
+    const unusedSpecies = $('bank-unused-species').checked;
+    const countrySelections = p => counts.country.get(p.countryId) || 0;
+    const speciesSelections = p => p.clues.reduce((sum, clue) => sum + (counts.species.get(clue.taxonId) || 0), 0);
+    const shown = candidates.filter(p =>
+      (filter === 'all' || status(p.id) === filter) &&
+      (!countryFilter || p.countryId === countryFilter) &&
+      (!unusedCountry || countrySelections(p) === 0) &&
+      (!unusedSpecies || speciesSelections(p) === 0) &&
+      (!query || L.normalize(p.country+' '+p.clues.map(c=>c.name+' '+c.scientific).join(' ')).includes(query)),
+    );
+    const byCountry = (a,b) => a.country.localeCompare(b.country);
+    const sort = {
+      'country-asc': byCountry,
+      'country-desc': (a,b) => byCountry(b,a),
+      'country-low': (a,b) => countrySelections(a)-countrySelections(b) || byCountry(a,b),
+      'country-high': (a,b) => countrySelections(b)-countrySelections(a) || byCountry(a,b),
+      'species-low': (a,b) => speciesSelections(a)-speciesSelections(b) || byCountry(a,b),
+      'species-high': (a,b) => speciesSelections(b)-speciesSelections(a) || byCountry(a,b),
+    }[$('bank-sort').value];
+    if (sort) shown.sort(sort);
+    const matchText = shown.length + (shown.length === 1 ? ' set' : ' sets');
+    if ($('bank-matches').textContent !== matchText) $('bank-matches').textContent = matchText;
     $('candidate-list').innerHTML=shown.map(p=>{
       const state=status(p.id),queued=plan.queue.includes(p.id),scheduled=scheduledDay(p.id);
       return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id} · ${selectionCountLabel(counts.country.get(p.countryId))}${queued?' · In the pile':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" ${queued||scheduled?'disabled':''}>${scheduled?'Scheduled':queued?'In the pile':state==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">Reject</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="selection-count">${selectionCountLabel(counts.species.get(c.taxonId))}</small><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
@@ -537,6 +560,13 @@
   if(!publicPlayer){
     $('game-back').addEventListener('click',()=>showView('curate'));
     $('bank-search').addEventListener('input',renderBank);
+    const availableCountries = new Map(activePuzzles.map(p => [p.countryId,p.country]));
+    for (const [id,name] of [...availableCountries].sort((a,b) => a[1].localeCompare(b[1]))) {
+      $('bank-country').add(new Option(name,id));
+    }
+    for (const id of ['bank-country','bank-sort','bank-unused-country','bank-unused-species']) {
+      $(id).addEventListener('change',renderBank);
+    }
     $('schedule-start').value=L.addDays(L.today(),1);$('schedule-start').min=L.today();
     $('schedule-button').addEventListener('click',()=>{
       if($('schedule-start').value<L.today()){toast('Choose today or a future date.');return;}

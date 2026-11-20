@@ -17,6 +17,23 @@
     <section id="curate-view" class="view">
       <div class="page-heading"><div><p class="eyebrow">CANDIDATES</p><h1>Your next daily sets.</h1><p class="intro">Five species, one country. Review the evidence, playtest a set, then add your favorites to the pile. Sets with broader modeled ranges and more clues needed to identify the country appear first. Selection counts include sets in the pile and scheduled games.</p></div><div class="bank-summary"><strong id="bank-count">0</strong><span>candidate sets</span><small id="bank-country-count">Loading candidates…</small></div></div>
       <div class="desk-toolbar"><label class="search-label"><span>Find a country or species</span><input id="bank-search" type="search" placeholder="Search your candidate bank…"></label><div class="filter-group" role="group" aria-label="Review status"><button data-filter="all" class="active" aria-pressed="true">All <span id="all-count">0</span></button><button data-filter="new" aria-pressed="false">Unreviewed</button><button data-filter="approved" aria-pressed="false">Approved</button></div></div>
+      <div class="bank-refinements">
+        <label>Country<select id="bank-country"><option value="">All countries</option></select></label>
+        <label>Sort by<select id="bank-sort">
+          <option value="default">Range preference</option>
+          <option value="country-asc">Country A–Z</option>
+          <option value="country-desc">Country Z–A</option>
+          <option value="country-low">Country selections · fewest first</option>
+          <option value="country-high">Country selections · most first</option>
+          <option value="species-low">Total species selections · fewest first</option>
+          <option value="species-high">Total species selections · most first</option>
+        </select></label>
+        <div class="bank-usage">
+          <label><input type="checkbox" id="bank-unused-country"> Country selected 0×</label>
+          <label><input type="checkbox" id="bank-unused-species"> All species selected 0×</label>
+        </div>
+        <span id="bank-matches" role="status"></span>
+      </div>
       <div class="bank-note"><span class="model-label">SCRIPT-CHECKED</span><p>Python checks each set against published iNaturalist species-range maps. No LLM is used to find or select observations. Each set matches one country in that range-map index. This is evidence to review, not proof of biological absence elsewhere. Every observation is selected with that country’s iNaturalist filter.</p></div>
       <details class="bank-generator"><summary>Generate more candidates (Python, no LLM)</summary><p>Run these commands from the repository folder. The script tries the full country index in random order and skips countries without suitable sets. Use --seed to repeat a search order or --countries to limit the search. The script selects observations through country-filtered public iNaturalist queries, checks public coordinates against boundaries before accepting each observation, and checks the five-species country intersection. Review photo quality yourself.</p><pre><code>python3 -m venv .venv-natguessr
 .venv-natguessr/bin/python -m pip install -r games/natureguessr/_curator/scripts/requirements.txt

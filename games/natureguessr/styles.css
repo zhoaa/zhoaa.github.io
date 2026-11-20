@@ -452,3 +452,18 @@ main:has(.game-results:not([hidden])) .game-topline {
 }
 
 .pile-species { margin-top: .35rem; font-size: .85rem; line-height: 1.45; overflow-wrap: anywhere; }
+
+.bank-refinements {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .75rem 1rem;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.bank-refinements > label { flex: 1 1 12rem; min-width: 0; max-width: 22rem; }
+.bank-refinements select { width: 100%; }
+.bank-usage { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-self: center; }
+.bank-usage label { display: flex; flex-direction: row; align-items: center; gap: .35rem; }
+.bank-usage input { accent-color: var(--green); }
+#bank-matches { align-self: center; margin-left: auto; color: var(--muted); font-size: .8rem; }
