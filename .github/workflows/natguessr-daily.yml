@@ -20,11 +20,14 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Select today’s private Toronto release
+        id: release-date
+        run: node -e 'const date = require("./games/natureguessr/logic.js").today(); require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, "secret=NATGUESSR_DAY_" + date.replaceAll("-", "_") + "\n")'
       - name: Prepare today's Toronto edition
         id: edition
         run: node games/natureguessr/_curator/scripts/publish-curation.js --scheduled
         env:
-          NATGUESSR_SCHEDULE: ${{ secrets.NATGUESSR_SCHEDULE }}
+          NATGUESSR_RELEASE: ${{ secrets[steps.release-date.outputs.secret] }}
       - name: Commit public edition
         if: steps.edition.outputs.ready == 'true'
         run: |

@@ -48,4 +48,5 @@ preview = player.replace('data-mode="public"', 'data-mode="preview"').replace(ed
 preview = preview.replace('<nav aria-label="Main"></nav>',
                           '<nav aria-label="Main"><a id="exit-player-preview" class="nav-button" href="../">'
                           'Exit player preview</a></nav>')
-versioned_assets(preview, curator / 'preview/index.html')
+if (curator / 'data.js').exists():
+    versioned_assets(preview, curator / 'preview/index.html')

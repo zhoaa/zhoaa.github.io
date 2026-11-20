@@ -3,3 +3,4 @@
 # Local natGuessr curation and generated preview
 natguessr-curation*.json
 games/natureguessr/_curator/preview/
+games/natureguessr/_curator/data.js
