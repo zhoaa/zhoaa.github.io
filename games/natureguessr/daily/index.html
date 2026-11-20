@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#153f32">
   <title>natGuessr Beta · Daily game</title>
-  <link rel="stylesheet" href="../styles.css?v=437dc5ad38">
+  <link rel="stylesheet" href="../styles.css?v=183ac17e10">
 </head>
 <body data-mode="public">
   <header class="site-header">
@@ -18,7 +18,7 @@
       <div class="game-topline"><span id="game-mode" class="eyebrow">PLAYTEST</span><span id="game-progress"></span></div>
       <div id="game-empty" class="empty-state" hidden><h1>Not available today.</h1><p>Check back for the next daily game.</p></div>
       <div id="game-content"><div class="game-title"><h1>Which country were these species observed?</h1></div><div id="game-clues" class="photo-grid"></div>
-        <div class="guess-layout"><div class="guess-main"><form id="guess-form" autocomplete="off"><label for="country-input">Country</label><div class="guess-input-row"><div class="country-picker"><input id="country-input" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="country-options" placeholder="Start typing a country…" autocomplete="off"><ul id="country-options" role="listbox" aria-label="Countries" hidden></ul></div><button type="submit" class="button primary">Guess</button></div><p id="guess-error" class="form-error" role="alert"></p></form><div class="guesses-heading"><span>YOUR GUESSES</span><span id="guesses-left">5 guesses left</span></div><ol id="guess-history" class="guess-history"></ol><div id="no-guesses" class="no-guesses">No guesses yet.</div></div><aside class="trail-panel"><div class="compass" id="trail-compass" role="img" aria-label="Compass"><span class="north">N</span><span class="east">E</span><span class="south">S</span><span class="west">W</span><i class="compass-needle"></i></div><h3 id="trail-heading">???</h3></aside></div>
+        <div class="guess-layout"><div class="guess-main"><form id="guess-form" autocomplete="off"><label for="country-input">Country</label><div class="guess-input-row"><div class="country-picker"><input id="country-input" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="country-options" placeholder="Start typing a country…" autocomplete="off"><ul id="country-options" role="listbox" aria-label="Countries" hidden></ul></div><button type="submit" class="button primary">Guess</button></div><p id="guess-error" class="form-error" role="alert"></p></form><section id="set-result" class="set-result" aria-live="polite" hidden></section><div class="guesses-heading"><span>YOUR GUESSES</span><span id="guesses-left">5 guesses left</span></div><ol id="guess-history" class="guess-history"></ol><div id="no-guesses" class="no-guesses">No guesses yet.</div></div><aside class="trail-panel"><div class="compass" id="trail-compass" role="img" aria-label="Compass"><span class="north">N</span><span class="east">E</span><span class="south">S</span><span class="west">W</span><i class="compass-needle"></i></div><h3 id="trail-heading">???</h3></aside></div>
         <div id="round-result" class="round-result" aria-live="polite" hidden></div>
       </div>
     </section>
@@ -59,6 +59,6 @@
     </div>
     <p>All observations are curated by hand. If I've missed something concerning, please send me an email at <a href="mailto:birdishbrainish@gmail.com">birdishbrainish@gmail.com</a>. If you would like your observation taken down for any reason at all, please feel free to contact the same email ASAP.</p>
   </dialog>
-  <script src="edition.js?v=eb0b566b67"></script><script src="../logic.js?v=5b9366905f"></script><script src="../app.js?v=ad59786e10"></script>
+  <script src="edition.js?v=a9da33dd00"></script><script src="../logic.js?v=5b9366905f"></script><script src="../world-map.js?v=2ee886a582"></script><script src="../app.js?v=b793a6ffb4"></script>
 </body>
 </html>

@@ -89,6 +89,7 @@ const playerPuzzles = puzzles.map(({ id, country, countryId, clues }) => ({
       url: observation.url,
       observer: observation.observer,
       observerName: observation.observerName,
+      location: observation.location,
       photo: observation.photo,
     },
   })),

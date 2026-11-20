@@ -142,8 +142,8 @@
     const overlay=$('win-celebration');overlay.replaceChildren();
     if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     for(let i=0;i<48;i++){const piece=document.createElement('i');piece.style.setProperty('--x',(Math.random()*100)+'vw');piece.style.setProperty('--drift',((Math.random()-.5)*220)+'px');piece.style.setProperty('--delay',(Math.random()*.3)+'s');piece.style.setProperty('--spin',((Math.random()-.5)*1000)+'deg');piece.style.setProperty('--tone',String(i%4));piece.className='confetti tone-'+i%4;overlay.append(piece);}
-    $('round-result').classList.remove('win-pop');void $('round-result').offsetWidth;$('round-result').classList.add('win-pop');
-    setTimeout(()=>{overlay.replaceChildren();$('round-result').classList.remove('win-pop');},2600);
+    $('set-result').classList.remove('win-pop');void $('set-result').offsetWidth;$('set-result').classList.add('win-pop');
+    setTimeout(()=>{overlay.replaceChildren();$('set-result').classList.remove('win-pop');},2600);
   }
   function startPlaytest(id) {
     game={mode:'playtest',ids:[id],round:0,rounds:[{guesses:[],revealed:false}]};showView('game');renderGame();
@@ -250,6 +250,81 @@
     });
   }
 
+  function observationMap(puzzle) {
+    const shapes = window.NATURE_WORLD_MAP;
+    const center = countries.get(puzzle.countryId)?.label;
+    if (!shapes || !center) return '';
+    const [longitude, latitude] = center;
+    const offset = lon => ((lon - longitude + 540) % 360) - 180;
+    const pins = puzzle.clues.flatMap((clue, index) => {
+      const point = clue.observation.location;
+      if (!Array.isArray(point) || point.length !== 2 || !point.every(Number.isFinite)) return [];
+      return [{ clue, number: index+1, x: longitude+offset(point[0]), y: -point[1] }];
+    });
+    if (!pins.length) return '';
+
+    const width = Math.min(360, Math.max(11, ...pins.map(pin =>
+      Math.max(Math.abs(pin.x-longitude)*2.7, Math.abs(pin.y+latitude)*4.9),
+    )));
+    const height = width * .56;
+    const midY = height >= 180 ? 0 : Math.max(-90+height/2, Math.min(90-height/2, -latitude));
+    const pinSize = width / 55;
+    const mapLeft = longitude - width/2, mapTop = midY - height/2;
+    const markers = [];
+    for (const pin of pins) {
+      let labelX = pin.x, labelY = pin.y;
+      // Fan out labels at clustered locations while keeping their exact endpoints.
+      for (let step = 0; step < 25; step++) {
+        const radius = step ? pinSize * (2.4 + Math.floor((step-1)/8)*2.4) : 0;
+        const angle = (step-1) * Math.PI / 4;
+        labelX = pin.x + Math.cos(angle)*radius;
+        labelY = pin.y + Math.sin(angle)*radius;
+        if (labelX < mapLeft+pinSize || labelX > mapLeft+width-pinSize ||
+            labelY < mapTop+pinSize || labelY > mapTop+height-pinSize) continue;
+        if (markers.every(other => Math.hypot(other.labelX-labelX, other.labelY-labelY) >= pinSize*2.25)) break;
+      }
+      markers.push({...pin, labelX, labelY});
+    }
+    const countriesPath = Object.entries(shapes).filter(([id]) => id !== puzzle.countryId).map(([,path]) => path).join('');
+    const countryPath = shapes[puzzle.countryId] || '';
+    return `<svg class="observation-map" viewBox="${longitude-width/2} ${midY-height/2} ${width} ${height}"
+      role="img" aria-label="${esc(puzzle.country)} map with ${pins.length} observation locations">
+      <defs><g id="observation-map-land">
+        <path class="map-land" d="${countriesPath}"></path>
+        <path class="map-answer" d="${countryPath}"></path>
+      </g></defs>
+      <use href="#observation-map-land" x="-360"></use>
+      <use href="#observation-map-land"></use>
+      <use href="#observation-map-land" x="360"></use>
+      ${markers.filter(({x,y,labelX,labelY}) => x!==labelX || y!==labelY).map(({x,y,labelX,labelY}) =>
+        `<line class="observation-pin-line" x1="${x}" y1="${y}" x2="${labelX}" y2="${labelY}"></line>`).join('')}
+      ${markers.map(({ clue, number, labelX, labelY }) => `
+        <g class="observation-pin" transform="translate(${labelX} ${labelY})">
+          <title>${number}. ${esc(clue.name)}</title>
+          <circle r="${pinSize}" stroke-width="${pinSize*.22}"></circle>
+          <text text-anchor="middle" dominant-baseline="central" font-size="${pinSize*1.3}">${number}</text>
+        </g>`).join('')}
+    </svg>`;
+  }
+
+  function renderSetResult(puzzle, guesses, won) {
+    const result = $('set-result');
+    result.classList.toggle('set-won', won);
+    result.classList.toggle('set-lost', !won);
+    result.innerHTML = `<div class="set-result-heading">
+      <div>
+        <p class="eyebrow">${won?'Correct':'Correct country'}</p>
+        <h2>${esc(puzzle.country)}</h2>
+      </div>
+      <div class="review-actions">${game.mode==='playtest'
+        ? `<button class="button secondary" data-action="approve" data-id="${puzzle.id}">${status(puzzle.id)==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button secondary" data-view="curate">Back to desk</button>`
+        : `<button type="button" class="button primary" id="next-round">${game.round===game.ids.length-1?'See results':'Next set'}</button>`}
+      </div>
+    </div>
+    ${observationMap(puzzle)}
+    <p class="set-result-score">${won?fmt(L.roundScore(puzzle,guesses))+' points · ':''}${guesses.length} ${guesses.length===1?'guess':'guesses'}</p>`;
+  }
+
   function renderGame() {
     if(!game)return;$('game-empty').hidden=true;$('game-content').hidden=false;
     $('game-mode').textContent=game.mode==='playtest'?'CURATOR PLAYTEST':(game.mode==='player-preview'?'PLAYER PREVIEW':'DAILY GAME')+' · '+game.date;
@@ -268,6 +343,7 @@
     document.querySelector('.guess-layout').hidden = done;
     document.querySelector('.game-title').hidden = done;
     $('round-result').classList.toggle('game-results', done);
+    $('round-result').hidden = !done;
     if (done) {
       renderGameResults(rounds, score);
       saveDaily();
@@ -296,7 +372,8 @@
       });
     }
     $('country-input').value='';selectedCountry=null;closeOptions();$('guess-error').textContent='';
-    $('country-input').disabled=ended;$('guess-form').querySelector('button[type=submit]').disabled=ended;
+    $('guess-form').hidden=ended;
+    $('set-result').hidden=!ended;
     $('guesses-left').textContent=ended?(won?'Country found':'Country revealed'):(5-r.guesses.length)+' guesses left';
     $('no-guesses').hidden=r.guesses.length>0;$('guess-history').innerHTML=guessHistory(p,r.guesses);
     const feedback = D.feedback[p.countryId][r.guesses.at(-1)];
@@ -308,8 +385,7 @@
     } else {
       $('trail-heading').textContent = '???';
     }
-    $('round-result').hidden=!ended;
-    if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${won?fmt(L.roundScore(p,r.guesses))+' points · ':''}${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See results':'Next country'}</button>`}</div>`;}
+    if (ended) renderSetResult(p, r.guesses, won);
     saveDaily();
   }
   const aliases={'usa':'USA','us':'USA','united states':'USA','america':'USA','uk':'GBR','britain':'GBR','great britain':'GBR','south korea':'KOR','north korea':'PRK','czechia':'CZE','ivory coast':'CIV','east timor':'TLS'};
@@ -336,7 +412,12 @@
     if(!c){$('guess-error').textContent='Choose a country from the suggestions.';return;}
     if(r.guesses.includes(c.id)){$('guess-error').textContent='You already tried '+c.name+'. Try somewhere else.';return;}
     if(!D.feedback[p.countryId]?.[c.id]){$('guess-error').textContent='Border feedback is unavailable for that country.';return;}
-    r.guesses.push(c.id);renderGame();if(c.id===p.countryId)celebrateWin();if(r.guesses.at(-1)!==p.countryId&&r.guesses.length<5)$('country-input').focus();
+    r.guesses.push(c.id);
+    renderGame();
+    if(c.id===p.countryId)celebrateWin();
+    const next = $('next-round');
+    if (next && !$('set-result').hidden) next.focus({preventScroll:true});
+    else if (!$('guess-form').hidden) $('country-input').focus();
   });
   if(!publicPlayer){
     $('game-back').addEventListener('click',()=>showView('curate'));
@@ -372,7 +453,18 @@
     if(target.hasAttribute('data-close-dialog'))target.closest('dialog').close();
     if(target.id==='help-button')$('help-dialog').showModal();
     if(target.id==='report-button')$('report-dialog').showModal();
-    if(target.id==='next-round'&&game){game.round++;renderGame();$('results-title')?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}
+    if(target.id==='next-round'&&game){
+      game.round++;
+      renderGame();
+      ($('results-title') || $('country-input')).focus({preventScroll:true});
+      window.scrollTo({top:0,behavior:'instant'});
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' || event.repeat || event.defaultPrevented || document.activeElement !== document.body ||
+        document.querySelector('dialog[open]') || $('game-view').hidden || $('set-result').hidden || $('game-content').hidden) return;
+    const next = $('next-round');
+    if (next) { event.preventDefault(); next.click(); }
   });
   document.addEventListener('click',event=>{if(!event.target.closest('.country-picker'))closeOptions();});
   document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));

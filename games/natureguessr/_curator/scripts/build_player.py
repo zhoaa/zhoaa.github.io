@@ -13,6 +13,7 @@ def versioned_assets(html, page):
     paths = {
         '../styles.css': root / 'styles.css',
         '../logic.js': root / 'logic.js',
+        '../world-map.js': root / 'world-map.js',
         '../app.js': root / 'app.js',
         'data.js': curator / 'data.js',
         '../daily/edition.js': root / 'daily/edition.js',

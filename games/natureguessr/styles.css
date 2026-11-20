@@ -354,3 +354,58 @@ main:has(.game-results:not([hidden])) .game-topline {
   from { transform: rotate(-3deg) scale(1); }
   to { transform: rotate(3deg) scale(1.08); }
 }
+
+.set-result {
+  --result-outline: #48856b;
+  --result-fill: #e7f4ea;
+  --result-accent: #245642;
+  --result-land: #c5dbc9;
+  --result-country: #88b99a;
+  --result-water: #f2faf4;
+  min-width: 0;
+  padding: clamp(.8rem, 2.5vw, 1.4rem);
+  border: 2px solid var(--result-outline);
+  border-radius: .85rem;
+  background: var(--result-fill);
+  color: var(--result-accent);
+}
+.set-result.set-lost {
+  --result-outline: #b76066;
+  --result-fill: #fbecee;
+  --result-accent: #782f37;
+  --result-land: #e3c5c8;
+  --result-country: #d69a9e;
+  --result-water: #fff5f5;
+}
+.set-result-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem 1rem;
+}
+.set-result .eyebrow { margin: 0 0 .2rem; color: inherit; }
+.set-result h2 { font-size: clamp(1.25rem, 2vw, 1.9rem); }
+.set-result-score { margin-top: .55rem; font-size: .85rem; }
+.observation-map {
+  display: block;
+  width: 100%;
+  aspect-ratio: 25 / 14;
+  margin-top: .85rem;
+  overflow: hidden;
+  background: var(--result-water);
+  border: 1px solid var(--result-outline);
+  border-radius: .55rem;
+}
+.observation-map .map-land,
+.observation-map .map-answer {
+  stroke: var(--result-water);
+  stroke-width: .7px;
+  vector-effect: non-scaling-stroke;
+  fill-rule: evenodd;
+}
+.observation-map .map-land { fill: var(--result-land); }
+.observation-map .map-answer { fill: var(--result-country); }
+.observation-pin circle { fill: var(--result-accent); stroke: white; }
+.observation-pin text { fill: white; font-weight: 800; }
+.observation-pin-line { stroke: var(--result-accent); stroke-width: 1.25px; vector-effect: non-scaling-stroke; }
