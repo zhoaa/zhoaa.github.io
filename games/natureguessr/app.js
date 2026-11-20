@@ -32,10 +32,12 @@
       plan.schedule[day]=ids;for(const id of ids){if(!plan.approved.includes(id))plan.approved.push(id);plan.rejected=plan.rejected.filter(x=>x!==id);}
     }
   }
+  if (!publicPlayer) plan = L.validatePlan(plan, puzzles.keys());
   function approve(id) {
     if(puzzles.get(id)?.archived){toast('This set no longer meets the country-name rule. Choose another set.');return;}
+    if(scheduledDay(id)||plan.queue.includes(id)) return;
     plan.rejected=plan.rejected.filter(x=>x!==id);if(!plan.approved.includes(id))plan.approved.push(id);plan.queue.push(id);
-    persist();toast('Approved and added to your queue.');
+    persist();toast('Added to the pile.');
   }
   function reject(id) {
     if(scheduledDay(id)){toast('Remove this set from the schedule before rejecting it.');return;}
@@ -48,7 +50,7 @@
     $('site-photo-attribution').hidden=next==='game'||next==='daily';
     for(const id of ['curate','queue','game'])$(id+'-view') && ($(id+'-view').hidden=id!==(next==='daily'?'game':next));
     document.querySelectorAll('.nav-button').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
-    document.title=(publicPlayer?'natGuessr Beta · ':'natGuessr · ')+({curate:'Curator desk',queue:'Approved queue',daily:'Daily game',game:'Playtest'}[next]||'Daily game');
+    document.title=(publicPlayer?'natGuessr Beta · ':'natGuessr · ')+({curate:'Curator desk',queue:'Approved pile',daily:'Daily game',game:'Playtest'}[next]||'Daily game');
     if(next==='daily')startDaily();if(next==='queue')renderQueue();window.scrollTo({top:0,behavior:'instant'});
   }
   function licenseLink(code) { return code==='cc0'?'https://creativecommons.org/publicdomain/zero/1.0/':'https://creativecommons.org/licenses/by/4.0/'; }
@@ -95,29 +97,38 @@
     if(publicPlayer)return;
     const archived=D.puzzles.length-activePuzzles.length;
     $('bank-archive-note').hidden=!archived;
-    $('bank-archive-note').textContent=archived+' older sets were archived because a species name gives away the answer country. Saved records are retained; replace archived sets in any existing queues or scheduled games.';
+    $('bank-archive-note').textContent=archived+' older sets were archived because a species name gives away the answer country. Saved records are retained; replace archived sets in any the pile or scheduled games.';
     $('bank-count').textContent=activePuzzles.length;$('all-count').textContent=activePuzzles.length;
     $('bank-country-count').textContent=new Set(activePuzzles.map(p=>p.countryId)).size+' countries · 5 observations per set';
     const query=L.normalize($('bank-search').value);
     const shown=activePuzzles.filter(p=>(filter==='all'||status(p.id)===filter)&&(!query||L.normalize(p.country+' '+p.clues.map(c=>c.name+' '+c.scientific).join(' ')).includes(query)));
     $('candidate-list').innerHTML=shown.map(p=>{
-      const state=status(p.id),queued=plan.queue.includes(p.id);
-      return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id}${queued?' · In your queue':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" >${state==='approved'?'Add to queue':'Approve & queue'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">${state==='rejected'?'Restore':'Reject'}</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
+      const state=status(p.id),queued=plan.queue.includes(p.id),scheduled=scheduledDay(p.id);
+      return `<article class="candidate"><div class="candidate-heading"><div><h2>${esc(p.country)}</h2><span class="status-badge ${state}">${state==='new'?'UNREVIEWED':state.toUpperCase()}</span><p class="candidate-id">${p.id}${queued?' · In the pile':''}</p></div><div class="candidate-heading-right"><button class="button secondary small" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary small" data-action="playtest" data-id="${p.id}">Playtest</button><button class="button primary small" data-action="approve" data-id="${p.id}" ${queued||scheduled?'disabled':''}>${scheduled?'Scheduled':queued?'In the pile':state==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button ghost small" data-action="reject" data-id="${p.id}">${state==='rejected'?'Restore':'Reject'}</button></div></div><div class="candidate-clues">${p.clues.map(c=>`<div class="candidate-thumb"><img src="${esc(c.observation.photo.url)}" alt="${esc(c.name)}" loading="lazy" decoding="async"><div><strong>${esc(c.name)}</strong><small class="thumb-credit"><a href="${esc(c.observation.url)}" target="_blank" rel="noopener noreferrer">${esc(c.observation.observer)}</a> · <a href="${licenseLink(c.observation.photo.license)}" target="_blank" rel="noopener noreferrer">${licenseName(c.observation.photo.license)}</a><span>${esc(c.observation.photo.attribution)}</span></small></div></div>`).join('')}</div><div class="candidate-footer"><span>1 matching country in the model index · Country-filtered · Open licenses</span><button class="text-button" data-action="review" data-id="${p.id}">Review photos, credits & evidence</button></div></article>`;
     }).join('');
     $('bank-empty').hidden=shown.length>0;installPhotoFallbacks($('candidate-list'));$('queue-count').textContent=plan.queue.length;
   }
   function review(id) {
     const p=puzzles.get(id);$('detail-title').textContent=p.country+' · '+p.id;
-    $('detail-body').innerHTML=`<div class="photo-grid">${photoCards(p)}</div><section class="detail-evidence"><h3>Why this set was offered</h3><p>All five observation searches start with <strong>place_id=${p.placeId}</strong> (${esc(p.country)}). Their photo and observation licenses are individually restricted to CC0 or CC BY. Public coordinates and country tags are checked as safeguards after that country-first selection.</p><p><strong>Modeled country intersection: ${esc(p.country)} only.</strong> Every country with non-trivial modeled land overlap counts as supporting a species. The five country-support sets intersect in one country; they need not all occur at the same spot within it.</p><div class="table-wrap"><table class="evidence-table"><thead><tr><th>Clue</th><th>Country support in the model</th><th>Source & selection</th></tr></thead><tbody>${p.clues.map((c,i)=>`<tr><td>${esc(c.name)}<br><span class="scientific">${esc(c.scientific)}</span></td><td><details><summary>${c.supportedCountries.length} ${c.supportedCountries.length===1?'country':'countries'}</summary>${c.supportedCountries.map(id=>esc(countries.get(id)?.name||id)).join(', ')}</details></td><td><a href="${esc(c.observation.query)}" target="_blank" rel="noopener noreferrer">Country-filtered photo query</a><br><a href="${esc(c.rangeUrl)}" target="_blank" rel="noopener noreferrer">Modeled range</a><br><span class="small-copy">Observed ${esc(c.observation.date)} · ${esc(c.observation.location[1].toFixed(4))}, ${esc(c.observation.location[0].toFixed(4))}<br>Observation data: ${licenseName(c.observation.license)} · Model ${esc(c.modelVersion)}</span></td></tr>`).join('')}</tbody></table></div><p>Models are incomplete. A singleton in this index is not proof that no other country has these species. Check distribution surprises, identification quality, and whether common names give away the answer before approval.</p><details><summary>Upstream species-selection queries</summary><ul>${p.selectionQueries.map((q,i)=>`<li><a href="${esc(q)}" target="_blank" rel="noopener noreferrer">${esc(p.clues[i].category)} candidates · place_id=${p.placeId}</a></li>`).join('')}</ul></details><div class="review-actions"><button class="button secondary" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary" data-action="playtest" data-id="${p.id}">Playtest this set</button><button class="button primary" data-action="approve" data-id="${p.id}">Approve & queue</button><button class="button danger" data-action="reject" data-id="${p.id}">${status(id)==='rejected'?'Restore to unreviewed':'Reject this set'}</button></div></section>`;
+    $('detail-body').innerHTML=`<div class="photo-grid">${photoCards(p)}</div><section class="detail-evidence"><h3>Why this set was offered</h3><p>All five observation searches start with <strong>place_id=${p.placeId}</strong> (${esc(p.country)}). Their photo and observation licenses are individually restricted to CC0 or CC BY. Public coordinates and country tags are checked as safeguards after that country-first selection.</p><p><strong>Modeled country intersection: ${esc(p.country)} only.</strong> Every country with non-trivial modeled land overlap counts as supporting a species. The five country-support sets intersect in one country; they need not all occur at the same spot within it.</p><div class="table-wrap"><table class="evidence-table"><thead><tr><th>Clue</th><th>Country support in the model</th><th>Source & selection</th></tr></thead><tbody>${p.clues.map((c,i)=>`<tr><td>${esc(c.name)}<br><span class="scientific">${esc(c.scientific)}</span></td><td><details><summary>${c.supportedCountries.length} ${c.supportedCountries.length===1?'country':'countries'}</summary>${c.supportedCountries.map(id=>esc(countries.get(id)?.name||id)).join(', ')}</details></td><td><a href="${esc(c.observation.query)}" target="_blank" rel="noopener noreferrer">Country-filtered photo query</a><br><a href="${esc(c.rangeUrl)}" target="_blank" rel="noopener noreferrer">Modeled range</a><br><span class="small-copy">Observed ${esc(c.observation.date)} · ${esc(c.observation.location[1].toFixed(4))}, ${esc(c.observation.location[0].toFixed(4))}<br>Observation data: ${licenseName(c.observation.license)} · Model ${esc(c.modelVersion)}</span></td></tr>`).join('')}</tbody></table></div><p>Models are incomplete. A singleton in this index is not proof that no other country has these species. Check distribution surprises, identification quality, and whether common names give away the answer before approval.</p><details><summary>Upstream species-selection queries</summary><ul>${p.selectionQueries.map((q,i)=>`<li><a href="${esc(q)}" target="_blank" rel="noopener noreferrer">${esc(p.clues[i].category)} candidates · place_id=${p.placeId}</a></li>`).join('')}</ul></details><div class="review-actions"><button class="button secondary" data-action="preview-user" data-id="${p.id}">Preview as player</button><button class="button secondary" data-action="playtest" data-id="${p.id}">Playtest this set</button><button class="button primary" data-action="approve" data-id="${p.id}">Approve & add to pile</button><button class="button danger" data-action="reject" data-id="${p.id}">${status(id)==='rejected'?'Restore to unreviewed':'Reject this set'}</button></div></section>`;
     installPhotoFallbacks($('detail-body'));$('detail-dialog').showModal();alignPhotoRows($('detail-body'));
+  }
+  function canUnschedule(day) {
+    return day >= L.today() && !window.NATURE_PUBLISHED_SCHEDULE?.[day];
   }
   function renderQueue() {
     if(publicPlayer)return;
-    $('queue-count').textContent=plan.queue.length;$('queue-meta').textContent=plan.queue.length+' queued';
-    $('queue-list').innerHTML=plan.queue.map((id,i)=>{const p=puzzles.get(id);return `<li class="queue-item"><span class="queue-position">${String(i+1).padStart(2,'0')}</span><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-queue="up" data-position="${i}" ${i===0?'disabled':''} aria-label="Move ${esc(p.country)} earlier">Earlier</button><button data-queue="down" data-position="${i}" ${i===plan.queue.length-1?'disabled':''} aria-label="Move ${esc(p.country)} later">Later</button><button data-queue="remove" data-position="${i}">Remove</button></div></li>`;}).join('');
-    $('queue-empty').hidden=plan.queue.length>0;$('schedule-button').disabled=new Set(plan.queue).size<3||plan.queue.some(id=>puzzles.get(id)?.archived);
+    const countryIds = [...new Set(plan.queue.map(id => puzzles.get(id)).filter(p => !p.archived).map(p => p.countryId))];
+    $('queue-count').textContent=plan.queue.length;
+    $('queue-meta').textContent=plan.queue.length+' sets · '+countryIds.length+' countries';
+    $('queue-list').innerHTML=plan.queue.map(id=>{
+      const p=puzzles.get(id);
+      return `<li class="queue-item"><div class="queue-info"><strong>${esc(p.country)}</strong><small>${p.id}${p.archived?' · Needs replacement: country name in a clue':''}</small></div><div class="queue-actions"><button data-remove-set="${id}" aria-label="Remove ${esc(p.country)} set ${id}">Remove</button></div></li>`;
+    }).join('');
+    $('queue-empty').hidden=plan.queue.length>0;
+    $('schedule-button').disabled=countryIds.length<3||L.continentCount(countryIds)<2;
     const editions=Object.entries(plan.schedule).sort(([a],[b])=>a.localeCompare(b));
-    $('schedule-list').innerHTML=editions.length?editions.map(([day,ids])=>`<div class="edition"><strong>${esc(day)}</strong>${ids.map((id,i)=>`<span>${i+1}. ${esc(puzzles.get(id).country)}${puzzles.get(id).archived?' · Needs replacement':''}</span>`).join('')}<button class="button ghost small" data-player-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview as player</button><button class="button ghost small" data-preview-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Playtest game</button><button class="button ghost small" data-unschedule="${day}">Return game to queue</button></div>`).join(''):'<p class="small-copy">No games scheduled yet.</p>';
+    $('schedule-list').innerHTML=editions.length?editions.map(([day,ids])=>`<div class="edition"><strong>${esc(day)}</strong>${ids.map((id,i)=>`<span>${i+1}. ${esc(puzzles.get(id).country)}${puzzles.get(id).archived?' · Needs replacement':''}</span>`).join('')}<button class="button ghost small" data-player-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Preview as player</button><button class="button ghost small" data-preview-edition="${day}" ${ids.some(id=>puzzles.get(id).archived)?'disabled':''}>Playtest game</button>${canUnschedule(day)?`<button class="button ghost small" data-unschedule="${day}">Return sets to pile</button>`:''}</div>`).join(''):'<p class="small-copy">No games scheduled yet.</p>';
   }
   function saveDaily() { if(game?.mode==='daily')try{localStorage.setItem(DAILY_KEY,JSON.stringify(game));}catch{} }
   function startPlayerPreview(ids,date=L.today()) {
@@ -297,7 +308,7 @@
       $('trail-heading').textContent = '???';
     }
     $('round-result').hidden=!ended;
-    if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${won?fmt(L.roundScore(p,r.guesses))+' points · ':''}${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to queue':'Approve & queue'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See results':'Next country'}</button>`}</div>`;}
+    if(ended){$('round-result').innerHTML=`<div><p class="eyebrow">${won?'CORRECT':'ANSWER'}</p><h2>${esc(p.country)}</h2><p>${won?fmt(L.roundScore(p,r.guesses))+' points · ':''}${r.guesses.length} ${r.guesses.length===1?'guess':'guesses'}</p></div><div class="review-actions">${game.mode==='playtest'?`<button class="button" data-action="approve" data-id="${p.id}" >${status(p.id)==='approved'?'Add to pile':'Approve & add to pile'}</button><button class="button" data-view="curate">Back to desk</button>`:`<button class="button" id="next-round">${game.round===game.ids.length-1?'See results':'Next country'}</button>`}</div>`;}
     saveDaily();
   }
   const aliases={'usa':'USA','us':'USA','united states':'USA','america':'USA','uk':'GBR','britain':'GBR','great britain':'GBR','south korea':'KOR','north korea':'PRK','czechia':'CZE','ivory coast':'CIV','east timor':'TLS'};
@@ -332,7 +343,7 @@
     $('schedule-start').value=L.addDays(L.today(),1);$('schedule-start').min=L.today();
     $('schedule-button').addEventListener('click',()=>{
       if($('schedule-start').value<L.today()){toast('Choose today or a future date.');return;}
-      try {const result=L.scheduleQueue(plan,$('schedule-start').value);plan=result.plan;persist();toast(result.editions+' daily '+(result.editions===1?'game':'games')+' scheduled.');}catch(e){toast(e.message);}
+      try {const result=L.schedulePile(plan,$('schedule-start').value,puzzles);plan=result.plan;persist();toast(result.games+' daily '+(result.games===1?'game':'games')+' scheduled.');}catch(e){toast(e.message);}
     });
     $('export-button').addEventListener('click',()=>{
       const exported={...plan,exportedAt:new Date().toISOString(),bankBuiltAt:D.builtAt};
@@ -348,8 +359,11 @@
     if(target.dataset.view){event.preventDefault();showView(target.dataset.view);}
     if(target.dataset.filter){filter=target.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===filter);b.setAttribute('aria-pressed',String(b.dataset.filter===filter));});renderBank();}
     if(target.dataset.action){const {action,id}=target.dataset;if(!puzzles.has(id))return;if(action==='preview-user'){startPlayerPreview([id]);}if(action==='playtest'){$('detail-dialog').close();startPlaytest(id);}if(action==='review')review(id);if(action==='approve'){approve(id);if($('detail-dialog').open)$('detail-dialog').close();if(game&&view==='game')renderGame();}if(action==='reject'){reject(id);if($('detail-dialog').open)$('detail-dialog').close();}}
-    if(target.dataset.queue){const i=Number(target.dataset.position);if(!Number.isInteger(i)||i<0||i>=plan.queue.length)return;const action=target.dataset.queue;if(action==='remove')plan.queue.splice(i,1);else{const j=i+(action==='up'?-1:1);if(j>=0&&j<plan.queue.length)[plan.queue[i],plan.queue[j]]=[plan.queue[j],plan.queue[i]];}persist();}
-    if(target.dataset.unschedule){const ids=plan.schedule[target.dataset.unschedule];if(ids){delete plan.schedule[target.dataset.unschedule];plan.queue.push(...ids);persist();toast('Game returned to the queue.');}}
+    if(target.dataset.removeSet){plan.queue=plan.queue.filter(id=>id!==target.dataset.removeSet);persist();}
+    if(target.dataset.unschedule && canUnschedule(target.dataset.unschedule)){
+      const day=target.dataset.unschedule,ids=plan.schedule[day];
+      if(ids){delete plan.schedule[day];plan.queue.push(...ids);persist();toast('Sets returned to the pile.');}
+    }
     if(target.dataset.playerEdition&&!publicPlayer)startPlayerPreview(plan.schedule[target.dataset.playerEdition],target.dataset.playerEdition);
     if(target.dataset.previewEdition&&!publicPlayer){showView('game');startDaily(target.dataset.previewEdition);}
     if(target.dataset.country)chooseCountry(target.dataset.country);

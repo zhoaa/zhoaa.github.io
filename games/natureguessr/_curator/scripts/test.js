@@ -47,24 +47,49 @@ assert.equal(L.distanceBand({km:0,touching:true}).tone,'borders');
 assert.equal(L.distanceBand({km:0},true).tone,'correct');
 assert.equal(L.today(new Date('2026-11-20T02:00:00Z')),'2026-11-19','Toronto day boundary');
 assert.equal(L.addDays('2026-12-31',1),'2027-01-01');assert.equal(L.validDate('2026-02-30'),false);
-let plan=L.emptyPlan();plan.approved=ids.slice(0,8);plan.queue=ids.slice(0,8);
-plan=L.validatePlan(plan,ids);
-let result=L.scheduleQueue(plan,'2026-12-31');assert.equal(result.editions,2);assert.deepEqual(result.plan.schedule['2026-12-31'],ids.slice(0,3));assert.deepEqual(result.plan.schedule['2027-01-01'],ids.slice(3,6));assert.deepEqual(result.plan.queue,ids.slice(6,8));
-L.validatePlan(result.plan,ids);
-const existing=L.emptyPlan();existing.approved=ids.slice(0,6);existing.queue=ids.slice(3,6);existing.schedule['2026-12-31']=ids.slice(0,3);
-result=L.scheduleQueue(existing,'2026-12-31');assert.deepEqual(result.plan.schedule['2026-12-31'],ids.slice(0,3));assert.deepEqual(result.plan.schedule['2027-01-01'],ids.slice(3,6),'existing editions preserved');
+const plan=L.validatePlan({...L.emptyPlan(),approved:ids.slice(0,8),queue:ids.slice(0,8)},ids);
 for(const bad of [
   {...plan,queue:['unknown']},
   {...plan,rejected:[ids[0]]},
   {...plan,queue:[],schedule:{'2026-12-31':ids.slice(0,2)}},
   {...plan,queue:[],schedule:{'2026-12-31':[ids[0],ids[0],ids[1]]}},
 ])assert.throws(()=>L.validatePlan(bad,ids));
-const [first,second,third]=ids;
-const repeat=L.validatePlan({...L.emptyPlan(),approved:[first,second,third],queue:[first,first,second,second,third,third,first]},ids);
-const repeated=L.scheduleQueue(repeat,'2026-12-31');
-assert.deepEqual(repeated.plan.schedule,{'2026-12-31':[first,second,third],'2027-01-01':[first,second,third]});
-assert.deepEqual(repeated.plan.queue,[first]);
-L.validatePlan(repeated.plan,ids);
+
+const candidates = new Map(Object.entries({
+  a: {countryId:'AUS'}, b: {countryId:'AUS'}, c: {countryId:'ZAF'}, d: {countryId:'ZAF'},
+  e: {countryId:'MEX'}, f: {countryId:'CRI'}, g: {countryId:'AUS',archived:true},
+}));
+const pile={...L.emptyPlan(),approved:[...candidates.keys()],queue:['a','a','b','c','d','e','f','g']};
+let randomCalls = 0;
+const result=L.schedulePile(pile,'2026-12-31',candidates,()=>randomCalls++===6?0:.99);
+assert.equal(result.games,2);
+assert.deepEqual(result.plan.queue,['g']);
+assert.deepEqual(Object.keys(result.plan.schedule),['2026-12-31','2027-01-01']);
+for (const sets of Object.values(result.plan.schedule)) {
+  assert.equal(new Set(sets.map(id=>candidates.get(id).countryId)).size,3);
+  assert.ok(L.continentCount(sets.map(id=>candidates.get(id).countryId)) >= 2);
+}
+assert.equal(new Set(Object.values(result.plan.schedule).flat()).size,6);
+const legacy={...pile,schedule:{'2026-12-31':['a','c','e']}};
+const continued=L.schedulePile(legacy,'2026-12-31',candidates,()=>.99);
+assert.deepEqual(continued.plan.schedule['2026-12-31'],['a','c','e']);
+assert.deepEqual(continued.plan.schedule['2027-01-01'],['b','d','f']);
+const drawFrom = (countryIds, roll) => {
+  const bank = new Map(countryIds.map(id => [id, {countryId:id}]));
+  let draws = 0;
+  return L.schedulePile({...L.emptyPlan(),approved:countryIds,queue:countryIds},'2026-12-31',bank,()=>{
+    // Keep the initial pile order, then select a weighted trio.
+    return draws++ === countryIds.length - 1 ? roll : .99;
+  });
+};
+assert.equal(drawFrom(['JPN','IND','TWN'],0).games,0);
+assert.equal(drawFrom(['JPN','IND','MEX'],.99).games,1);
+const mixed = ['JPN','IND','MEX','ESP'];
+// Four equally likely proposals have acceptance weights 1, 1, 4, 4.
+for (const [roll, continents] of [[0,2],[.199,2],[.2,3],[.999,3]]) {
+  const drawn = drawFrom(mixed, roll);
+  assert.equal(L.continentCount(drawn.plan.schedule['2026-12-31']),continents);
+}
 assert.equal(L.roundScore(D.puzzles[0],[D.puzzles[0].countryId]),5000);
 assert.equal(L.roundScore(D.puzzles[0],['USA',D.puzzles[0].countryId]),4000);
 assert.equal(L.roundScore(D.puzzles[0],['USA']),0);

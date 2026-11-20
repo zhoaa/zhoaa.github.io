@@ -38,6 +38,22 @@ if (Object.values(plan.schedule).flat().some(id => byId.get(id).archived)) {
 }
 
 const day = L.today();
+// Keep legacy past games as history, but prevent repeat sets or countries in future releases.
+const used = new Set(Object.entries(plan.schedule).filter(([date]) => date < day).flatMap(([, ids]) => ids));
+for (const [date, ids] of Object.entries(plan.schedule)) {
+  if (date < day) continue;
+  const countries = ids.map(id => byId.get(id).countryId);
+  if (new Set(countries).size !== 3) {
+    throw new Error(`The game for ${date} needs three different countries. Return its sets to the pile and redraw it.`);
+  }
+  if (L.continentCount(countries) < 2) {
+    throw new Error(`The game for ${date} needs at least two continents. Return its sets to the pile and redraw it.`);
+  }
+  if (ids.some(id => used.has(id))) {
+    throw new Error(`The game for ${date} repeats a set. Return the affected games to the pile and redraw them.`);
+  }
+  ids.forEach(id => used.add(id));
+}
 if (upload) {
   const schedule = Object.fromEntries(
     Object.entries(plan.schedule).filter(([date]) => date >= day).sort(([a], [b]) => a.localeCompare(b)),
@@ -53,7 +69,7 @@ if (upload) {
     input: secret,
     stdio: ['pipe', 'inherit', 'inherit'],
   });
-  console.log(`Saved ${count} scheduled edition(s) in the private GitHub Actions queue.`);
+  console.log(`Saved ${count} scheduled edition(s) in the private GitHub Actions schedule.`);
   process.exit(0);
 }
 

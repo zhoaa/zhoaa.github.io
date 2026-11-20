@@ -36,8 +36,8 @@ player = re.sub(r'<nav aria-label="Main">.*?</nav>',
 player = re.sub(r'    <section id="(?:curate|queue)-view".*?</section>\n', '', player, flags=re.S)
 player = re.sub(r'  <dialog id="detail-dialog".*?</dialog>\n', '', player)
 player = re.sub(r'<button id="game-back".*?</button>', '', player)
-player = player.replace('<p>Schedule a game using three approved sets in your queue.</p>'
-                        '<button data-view="queue" class="button primary">Open the queue</button>',
+player = player.replace('<p>Schedule a game using three approved sets in your pile.</p>'
+                        '<button data-view="queue" class="button primary">Open the pile</button>',
                         '<p>Check back for the next daily game.</p>')
 edition = '<script src="../daily/edition.js"></script>'
 bank = '<script src="data.js"></script>'

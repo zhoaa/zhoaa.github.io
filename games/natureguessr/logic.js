@@ -29,37 +29,83 @@
     }
     const approved = new Set(value.approved), rejected = new Set(value.rejected);
     if ([...approved].some(id=>rejected.has(id))) throw new Error('A puzzle cannot be approved and rejected.');
+    const allocated = new Set();
     for (const [day, ids] of Object.entries(value.schedule)) {
       if (!validDate(day) || !Array.isArray(ids) || ids.length!==3 || new Set(ids).size!==3) throw new Error('Each scheduled day needs a real date and three different puzzles.');
       for (const id of ids) {
         if (!approved.has(id)) throw new Error('Scheduled puzzles must be approved.');
+        allocated.add(id);
       }
     }
     for (const id of value.queue) {
       if (!approved.has(id)) throw new Error('Queue entries must be approved.');
     }
-    return {version:1,approved:[...approved],rejected:[...rejected],queue:[...value.queue],schedule:JSON.parse(JSON.stringify(value.schedule))};
+    return {version:1,approved:[...approved],rejected:[...rejected],queue:[...new Set(value.queue)].filter(id => !allocated.has(id)),schedule:JSON.parse(JSON.stringify(value.schedule))};
   }
-  function scheduleQueue(plan, firstDay) {
-    if (!validDate(firstDay)) throw new Error('Choose a valid start date.');
-    const next=JSON.parse(JSON.stringify(plan));let day=firstDay,editions=0;
-    for (;;) {
-      const selected = new Set();
-      const positions = [];
-      for (const [index, id] of next.queue.entries()) {
-        if (selected.has(id)) continue;
-        selected.add(id);
-        positions.push(index);
-        if (selected.size === 3) break;
-      }
-      if (selected.size < 3) break;
-      while (next.schedule[day]) day=addDays(day,1);
-      next.schedule[day] = [...selected];
-      for (const index of positions.reverse()) next.queue.splice(index, 1);
-      editions++;
-      day=addDays(day,1);
+  // These are the countries supported by the curator's candidate generator.
+  const continents = {
+    ZAF: 'Africa', MDG: 'Africa', AUS: 'Oceania', NZL: 'Oceania',
+    JPN: 'Asia', TWN: 'Asia', LKA: 'Asia', IDN: 'Asia', IND: 'Asia',
+    MEX: 'North America', CRI: 'North America',
+    BRA: 'South America', ECU: 'South America', CHL: 'South America', COL: 'South America',
+    ESP: 'Europe',
+  };
+
+  function continentCount(countryIds) {
+    return new Set(countryIds.map(id => continents[id]).filter(Boolean)).size;
+  }
+
+  function shuffle(items, random) {
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
     }
-    return {plan:next,editions};
+    return items;
+  }
+
+  function schedulePile(plan, firstDay, puzzles, random = Math.random) {
+    if (!validDate(firstDay)) throw new Error('Choose a valid start date.');
+    const next = validatePlan(plan, puzzles.keys());
+    const buckets = new Map();
+    for (const id of shuffle([...next.queue], random)) {
+      const puzzle = puzzles.get(id);
+      if (puzzle.archived) continue;
+      if (!buckets.has(puzzle.countryId)) buckets.set(puzzle.countryId, []);
+      buckets.get(puzzle.countryId).push(id);
+    }
+
+    const selected = new Set();
+    let day = firstDay;
+    let games = 0;
+    for (;;) {
+      const available = [...buckets.keys()].filter(id => buckets.get(id).length);
+      const draws = [];
+      let totalWeight = 0;
+      for (let i = 0; i < available.length - 2; i++) {
+        for (let j = i + 1; j < available.length - 1; j++) {
+          for (let k = j + 1; k < available.length; k++) {
+            const trio = [available[i], available[j], available[k]];
+            const diversity = continentCount(trio);
+            if (diversity < 2) continue;
+            // Sampling accepted draws directly gives the same odds as rerolling,
+            // even when the only viable draws span two continents.
+            totalWeight += diversity === 3 ? 4 : 1;
+            draws.push({ trio, upperBound: totalWeight });
+          }
+        }
+      }
+      if (!draws.length) break;
+      const roll = random() * totalWeight;
+      const { trio } = draws.find(draw => roll < draw.upperBound);
+
+      while (next.schedule[day]) day = addDays(day, 1);
+      next.schedule[day] = shuffle(trio, random).map(id => buckets.get(id).pop());
+      next.schedule[day].forEach(id => selected.add(id));
+      day = addDays(day, 1);
+      games++;
+    }
+    next.queue = next.queue.filter(id => !selected.has(id));
+    return { plan: next, games };
   }
   function roundScore(puzzle, guesses) { return guesses.length && guesses[guesses.length-1]===puzzle.countryId ? Math.max(0,6000-1000*guesses.length) : 0; }
   function proximityScore(guesses, feedback) {
@@ -77,5 +123,5 @@
       return 0;
     }));
   }
-  return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,scheduleQueue,roundScore,proximityScore};
+  return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,schedulePile,continentCount,roundScore,proximityScore};
 });
