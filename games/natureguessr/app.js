@@ -13,6 +13,47 @@
   }
   const puzzles=new Map(D.puzzles.map(p=>[p.id,p])),countries=new Map(D.countries.map(c=>[c.id,c]));
   const qa=new URLSearchParams(location.search).has('qa');
+  // Set this to your GoatCounter dashboard origin to enable the two counters.
+  const GOATCOUNTER_SITE = 'https://zhoaa.goatcounter.com';
+  const analytics = (() => {
+    const disabled = mode !== 'public' || qa || location.hostname !== 'zhoaa.github.io' ||
+      navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.globalPrivacyControl;
+    if (disabled || !GOATCOUNTER_SITE) return { complete() {} };
+    const pending = [];
+    let ready = false;
+    const send = data => {
+      try {
+        if (!ready) { pending.push(data); return; }
+        window.goatcounter.count(data);
+      } catch { /* Analytics must never interrupt the game. */ }
+    };
+    window.goatcounter = { no_onload: true, no_events: true };
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://gc.zgo.at/count.js';
+    script.dataset.goatcounter = GOATCOUNTER_SITE.replace(/\/$/, '') + '/count';
+    script.onload = () => {
+      ready = true;
+      pending.splice(0).forEach(send);
+    };
+    script.onerror = () => { pending.length = 0; };
+    document.head.append(script);
+    // Fixed values keep query strings, referrers, scores and guesses out of analytics.
+    send({ path: '/games/natureguessr/daily/', title: 'natGuessr', referrer: '' });
+    let completed = false;
+    return {
+      complete(game) {
+        if (completed || game.mode !== 'daily') return;
+        completed = true;
+        const edition = JSON.stringify([game.date, game.ids]);
+        try {
+          if (localStorage.getItem('natguessr-counted-completion') === edition) return;
+          localStorage.setItem('natguessr-counted-completion', edition);
+        } catch { /* In-memory deduplication still works without storage. */ }
+        send({ path: 'natguessr-completed', title: 'natGuessr completed', event: true, referrer: '' });
+      }
+    };
+  })();
   const activePuzzles = publicPlayer ? [] : D.puzzles
     .filter(p => !p.archived)
     .map(p => ({puzzle:p, preference:L.rangePreference(p.clues)}))
@@ -542,6 +583,7 @@
     if(target.id==='report-button')$('report-dialog').showModal();
     if(target.id==='next-round'&&game){
       game.round++;
+      if (game.round === game.ids.length) analytics.complete(game);
       renderGame();
       ($('results-title') || $('country-input')).focus({preventScroll:true});
       window.scrollTo({top:0,behavior:'instant'});
