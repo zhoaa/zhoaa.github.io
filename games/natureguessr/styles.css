@@ -406,9 +406,12 @@ main:has(.game-results:not([hidden])) .game-topline {
 }
 .observation-map .map-land { fill: var(--result-land); }
 .observation-map .map-answer { fill: var(--result-country); }
-.observation-pin { cursor: zoom-in; }
-.observation-pin rect,
-.observation-map-preview rect {
+.observation-pin {
+  cursor: zoom-in;
+  -webkit-tap-highlight-color: transparent;
+}
+.observation-pin:focus { outline: none; }
+.observation-pin rect {
   fill: white;
   stroke: var(--result-accent);
   stroke-width: 1px;
@@ -416,5 +419,28 @@ main:has(.game-results:not([hidden])) .game-topline {
 }
 .observation-pin:is(:hover, :focus-visible) rect { stroke-width: 2px; }
 .observation-pin-tail { fill: var(--result-accent); pointer-events: none; }
-.observation-map-preview { pointer-events: none; }
-.observation-map-preview text { fill: var(--ink); font-weight: 700; }
+.observation-map-wrap { position: relative; }
+.observation-map-preview {
+  position: absolute;
+  z-index: 1;
+  width: min(calc(100% - 8px), clamp(7rem, 32%, 12rem));
+  padding: .3rem;
+  border: 1px solid var(--result-accent);
+  border-radius: .45rem;
+  background: white;
+  color: var(--ink);
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.observation-map-preview img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: .25rem;
+  object-fit: cover;
+}
+.observation-map-preview span { display: block; padding: .25rem .15rem 0; }

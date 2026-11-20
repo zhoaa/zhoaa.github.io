@@ -287,7 +287,7 @@
     }
     const countriesPath = Object.entries(shapes).filter(([id]) => id !== puzzle.countryId).map(([,path]) => path).join('');
     const countryPath = shapes[puzzle.countryId] || '';
-    return `<svg class="observation-map" viewBox="${longitude-width/2} ${midY-height/2} ${width} ${height}"
+    return `<div class="observation-map-wrap"><svg class="observation-map" viewBox="${longitude-width/2} ${midY-height/2} ${width} ${height}"
       role="group" aria-label="${esc(puzzle.country)} map with ${pins.length} observation locations">
       <defs><g id="observation-map-land">
         <path class="map-land" d="${countriesPath}"></path>
@@ -302,16 +302,16 @@
       ${markers.map(({ clue, index, labelX, labelY }) => `
         <a class="observation-pin" href="${esc(clue.observation.url)}"
           data-photo-puzzle="${esc(puzzle.id)}" data-photo-index="${index}" data-name-visible="true"
-          data-x="${labelX}" data-y="${labelY}" data-species-name="${esc(clue.name)}" aria-label="Zoom in on ${esc(clue.name)}">
+          data-species-name="${esc(clue.name)}" aria-label="Zoom in on ${esc(clue.name)}">
           <rect x="${labelX-pinSize}" y="${labelY-pinSize}" width="${pinSize*2}" height="${pinSize*2}"
             rx="${pinSize*.25}"></rect>
           <image x="${labelX-pinSize*.82}" y="${labelY-pinSize*.82}" width="${pinSize*1.64}" height="${pinSize*1.64}"
             href="${esc(clue.observation.photo.url)}" preserveAspectRatio="xMidYMid slice"></image>
         </a>`).join('')}
-      <g class="observation-map-preview" aria-hidden="true" hidden>
-        <rect></rect><image preserveAspectRatio="xMidYMid slice"></image><text text-anchor="middle"></text>
-      </g>
-    </svg>`;
+    </svg>
+    <div class="observation-map-preview" aria-hidden="true" hidden>
+      <img alt=""><span></span>
+    </div></div>`;
   }
 
   function renderSetResult(puzzle, guesses, won) {
@@ -330,48 +330,31 @@
     </div>
     ${observationMap(puzzle)}
     <p class="set-result-score">${won?fmt(L.roundScore(puzzle,guesses))+' points · ':''}${guesses.length} ${guesses.length===1?'guess':'guesses'}</p>`;
-    const map = result.querySelector('.observation-map');
+    const map = result.querySelector('.observation-map-wrap');
     if (!map) return;
     const preview = map.querySelector('.observation-map-preview');
-    const photo = preview.querySelector('image');
-    const frame = preview.querySelector('rect');
-    const name = preview.querySelector('text');
-    const bounds = map.viewBox.baseVal;
-    const size = bounds.width * .23;
-    const pad = bounds.width * .008;
-    const captionHeight = bounds.width * .048;
-    const previewHeight = size + captionHeight;
-    name.setAttribute('x', size/2);
-    name.setAttribute('y', size+captionHeight*.62);
-    name.setAttribute('font-size', captionHeight*.68);
+    const photo = preview.querySelector('img');
+    const name = preview.querySelector('span');
     for (const pin of map.querySelectorAll('.observation-pin')) {
       const show = () => {
-        const x = Number(pin.dataset.x), y = Number(pin.dataset.y);
-        const left = Math.max(bounds.x+pad, Math.min(bounds.x+bounds.width-size-pad, x-size/2));
-        const above = y-previewHeight-pad*3;
-        const top = above >= bounds.y+pad ? above : Math.min(y+pad*3, bounds.y+bounds.height-previewHeight-pad);
-        preview.setAttribute('transform', `translate(${left} ${top})`);
-        photo.setAttribute('href', pin.querySelector('image').getAttribute('href'));
-        for (const [element, inset] of [[frame,0],[photo,pad]]) {
-          element.setAttribute('x', inset);
-          element.setAttribute('y', inset);
-          element.setAttribute('width', size-inset*2);
-          element.setAttribute('height', size-inset*2);
-        }
-        frame.setAttribute('height', previewHeight);
-        frame.setAttribute('rx', pad);
+        const bounds = map.getBoundingClientRect();
+        const marker = pin.getBoundingClientRect();
+        photo.src = pin.querySelector('image').getAttribute('href');
         name.textContent = pin.dataset.speciesName;
-        name.removeAttribute('textLength');
-        preview.removeAttribute('hidden');
-        if (name.getComputedTextLength() > size-pad*2) {
-          name.setAttribute('textLength', size-pad*2);
-          name.setAttribute('lengthAdjust', 'spacingAndGlyphs');
-        }
+        preview.hidden = false;
+
+        const width = preview.offsetWidth, height = preview.offsetHeight;
+        const center = marker.left + marker.width / 2 - bounds.left;
+        const above = marker.top - bounds.top - height - 6;
+        const below = marker.bottom - bounds.top + 6;
+        const top = above >= 4 ? above : Math.min(below, bounds.height-height-4);
+        preview.style.left = Math.max(4, Math.min(bounds.width-width-4, center-width/2)) + 'px';
+        preview.style.top = Math.max(4, top) + 'px';
       };
       const hide = () => preview.setAttribute('hidden', '');
-      pin.addEventListener('pointerenter', show);
+      pin.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') show(); });
       pin.addEventListener('pointerleave', hide);
-      pin.addEventListener('focus', show);
+      pin.addEventListener('focus', () => { if (pin.matches(':focus-visible')) show(); });
       pin.addEventListener('blur', hide);
     }
   }
