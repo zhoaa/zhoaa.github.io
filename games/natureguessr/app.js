@@ -268,7 +268,7 @@
     )));
     const height = width * .56;
     const midY = height >= 180 ? 0 : Math.max(-90+height/2, Math.min(90-height/2, -latitude));
-    const pinSize = width / 70;
+    const pinSize = width / 60;
     const mapLeft = longitude - width/2, mapTop = midY - height/2;
     const markers = [];
     for (const pin of pins) {
@@ -302,14 +302,14 @@
       ${markers.map(({ clue, index, labelX, labelY }) => `
         <a class="observation-pin" href="${esc(clue.observation.url)}"
           data-photo-puzzle="${esc(puzzle.id)}" data-photo-index="${index}" data-name-visible="true"
-          data-x="${labelX}" data-y="${labelY}" aria-label="Zoom in on ${esc(clue.name)}">
+          data-x="${labelX}" data-y="${labelY}" data-species-name="${esc(clue.name)}" aria-label="Zoom in on ${esc(clue.name)}">
           <rect x="${labelX-pinSize}" y="${labelY-pinSize}" width="${pinSize*2}" height="${pinSize*2}"
             rx="${pinSize*.25}"></rect>
           <image x="${labelX-pinSize*.82}" y="${labelY-pinSize*.82}" width="${pinSize*1.64}" height="${pinSize*1.64}"
             href="${esc(clue.observation.photo.url)}" preserveAspectRatio="xMidYMid slice"></image>
         </a>`).join('')}
       <g class="observation-map-preview" aria-hidden="true" hidden>
-        <rect></rect><image preserveAspectRatio="xMidYMid slice"></image>
+        <rect></rect><image preserveAspectRatio="xMidYMid slice"></image><text text-anchor="middle"></text>
       </g>
     </svg>`;
   }
@@ -335,15 +335,21 @@
     const preview = map.querySelector('.observation-map-preview');
     const photo = preview.querySelector('image');
     const frame = preview.querySelector('rect');
+    const name = preview.querySelector('text');
     const bounds = map.viewBox.baseVal;
     const size = bounds.width * .23;
     const pad = bounds.width * .008;
+    const captionHeight = bounds.width * .048;
+    const previewHeight = size + captionHeight;
+    name.setAttribute('x', size/2);
+    name.setAttribute('y', size+captionHeight*.62);
+    name.setAttribute('font-size', captionHeight*.68);
     for (const pin of map.querySelectorAll('.observation-pin')) {
       const show = () => {
         const x = Number(pin.dataset.x), y = Number(pin.dataset.y);
         const left = Math.max(bounds.x+pad, Math.min(bounds.x+bounds.width-size-pad, x-size/2));
-        const above = y-size-pad*3;
-        const top = above >= bounds.y+pad ? above : Math.min(y+pad*3, bounds.y+bounds.height-size-pad);
+        const above = y-previewHeight-pad*3;
+        const top = above >= bounds.y+pad ? above : Math.min(y+pad*3, bounds.y+bounds.height-previewHeight-pad);
         preview.setAttribute('transform', `translate(${left} ${top})`);
         photo.setAttribute('href', pin.querySelector('image').getAttribute('href'));
         for (const [element, inset] of [[frame,0],[photo,pad]]) {
@@ -352,8 +358,15 @@
           element.setAttribute('width', size-inset*2);
           element.setAttribute('height', size-inset*2);
         }
+        frame.setAttribute('height', previewHeight);
         frame.setAttribute('rx', pad);
+        name.textContent = pin.dataset.speciesName;
+        name.removeAttribute('textLength');
         preview.removeAttribute('hidden');
+        if (name.getComputedTextLength() > size-pad*2) {
+          name.setAttribute('textLength', size-pad*2);
+          name.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+        }
       };
       const hide = () => preview.setAttribute('hidden', '');
       pin.addEventListener('pointerenter', show);

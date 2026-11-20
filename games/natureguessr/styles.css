@@ -417,3 +417,4 @@ main:has(.game-results:not([hidden])) .game-topline {
 .observation-pin:is(:hover, :focus-visible) rect { stroke-width: 2px; }
 .observation-pin-tail { fill: var(--result-accent); pointer-events: none; }
 .observation-map-preview { pointer-events: none; }
+.observation-map-preview text { fill: var(--ink); font-weight: 700; }
