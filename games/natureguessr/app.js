@@ -13,7 +13,14 @@
   }
   const puzzles=new Map(D.puzzles.map(p=>[p.id,p])),countries=new Map(D.countries.map(c=>[c.id,c]));
   const qa=new URLSearchParams(location.search).has('qa');
-  const activePuzzles=D.puzzles.filter(p=>!p.archived);
+  const activePuzzles = publicPlayer ? [] : D.puzzles
+    .filter(p => !p.archived)
+    .map(p => ({puzzle:p, preference:L.rangePreference(p.clues)}))
+    .sort((a,b) => {
+      const firstDifference = a.preference.findIndex((value,index) => value !== b.preference[index]);
+      return firstDifference < 0 ? 0 : a.preference[firstDifference] - b.preference[firstDifference];
+    })
+    .map(({puzzle}) => puzzle);
   const PLAN_KEY='natureguessr-curation-v1'+(qa?'-qa':''),DAILY_KEY='natureguessr-daily-v1'+(qa?'-qa':'');
   let plan=L.emptyPlan(),filter='all',view='curate',game=null,selectedCountry=null,suggestions=[],highlight=-1,toastTimer;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

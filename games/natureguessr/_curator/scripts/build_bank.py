@@ -55,7 +55,7 @@ world_path=WORK/'world-10m.json'
 if not world_path.exists():
     data=get('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson');world_path.write_text(json.dumps(data))
 features=json.loads(world_path.read_text())['features']
-countries=[];geometries=[];simple=[];grouped={};country_aliases=[]
+countries=[];geometries=[];grouped={};country_aliases=[]
 for f in features:
     p=f['properties'];iso=p.get('ISO_A3_EH',p['ADM0_A3'])
     # ISO country/territory codes, with descriptive ADMIN names. No centroid guessing.
@@ -70,9 +70,8 @@ for iso,parts in grouped.items():
     countries.append({'id':iso,'name':p['ADMIN'],'iso2':p.get('ISO_A2_EH',p.get('ISO_A2','')),'label':[p['LABEL_X'],p['LABEL_Y']],'continent':p['CONTINENT']})
     names = [p.get(key) for key in ('ADMIN', 'NAME', 'NAME_LONG', 'NAME_EN', 'FORMAL_EN')]
     country_aliases.append(list(dict.fromkeys(name for name in names if name and name != '-99')))
-    geometries.append(s);simple.append(s.simplify(.015,preserve_topology=True))
-tree = STRtree(simple)
-exact_tree = STRtree(geometries)
+    geometries.append(s)
+country_tree = STRtree(geometries)
 country_order = list(range(len(countries)))
 random.Random(args.seed).shuffle(country_order)
 country_order = country_order[:args.countries]
@@ -116,17 +115,30 @@ initial_count=len(bank);existing_ids=[p['id'] for p in bank];target_count=initia
 def range_countries(tid):
     if tid in range_index:return range_index[tid]
     d=get(f'https://inaturalist-open-data.s3.us-east-1.amazonaws.com/geomodel/geojsons/latest/{tid}.geojson')
-    if not d:return None
+    if not d:
+        range_index[tid] = None
+        return None
     try:
         geo=d['geometry'] if d.get('type')=='Feature' else d['features'][0]['geometry']
         s=set_precision(make_valid(shape(geo)),.000001)
         present=set()
-        for i in tree.query(s,predicate='intersects'):
+        for i in country_tree.query(s,predicate='intersects'):
             # Conservative: any non-trivial modeled land overlap counts, even a sliver.
-            if area(s.intersection(simple[i]))>.01:present.add(int(i))
-        result={'shape':s,'countries':present,'version':d.get('properties',{}).get('geomodel_version')}
+            if area(s.intersection(geometries[i]))>.01:present.add(int(i))
+        result={'countries':present,'version':d.get('properties',{}).get('geomodel_version')}
         range_index[tid]=result;return result
     except Exception as e:print('RANGE ERROR',tid,str(e),flush=True);return None
+
+def combination_preference(supports):
+    """Prefer wider ranges and sets that need more clues to identify a country."""
+    widths = [len(countries) for countries in supports]
+    required = next(
+        (count for count in range(1, len(supports))
+         if any(len(set.intersection(*subset)) == 1 for subset in itertools.combinations(supports, count))),
+        len(supports),
+    )
+    return (widths.count(1), -required, -min(widths), -sum(widths))
+
 
 def observation(taxon,base,ci):
     params=dict(base,taxon_id=taxon['id'],per_page=30,order_by='votes')
@@ -223,15 +235,21 @@ for ci in country_order:
     for category,iconic in GROUPS:
         d,url=api('observations/species_counts',dict(base,iconic_taxa=iconic,per_page=100));queries.append(url)
         eligible=[x for x in (d or {}).get('results',[]) if x['count']>=3 and x['taxon']['rank']=='species' and x['taxon'].get('observations_count',0)>=100 and not name_gives_country(x['taxon'],name)]
-        ranked=sorted(eligible,key=lambda x:x['taxon'].get('observations_count',1e12))
-        selected=ranked[:20]+eligible[:3];seen=set();pool=[]
-        for x in selected:
-            t=x['taxon'];tid=t['id']
-            if tid in seen:continue
-            seen.add(tid);r=range_countries(tid)
-            if r and ci in r['countries']:
-                pool.append({'category':category,'taxon':t,'localCount':x['count'],'range':r})
-            if len(pool)>=6:break
+        ranked = sorted(eligible, key=lambda x: x['taxon'].get('observations_count', 0), reverse=True)
+        # Observation counts only bound the model lookups. Actual range sizes rank the pool.
+        shortlist = ranked[:20] + ranked[-4:]
+        candidates = {}
+        for x in shortlist:
+            t = x['taxon']
+            tid = t['id']
+            if tid in candidates:
+                continue
+            model = range_countries(tid)
+            if model and ci in model['countries']:
+                candidates[tid] = {'category':category,'taxon':t,'localCount':x['count'],'range':model}
+        by_width = sorted(candidates.values(), key=lambda x: (len(x['range']['countries']), x['localCount']), reverse=True)
+        # Leave two narrower alternatives in the search for sparsely covered countries.
+        pool = by_width[:6] + by_width[6:][-2:]
         pools.append(pool);print(' ',category,len(pool),'modeled candidates',flush=True)
         if not pool:
             diagnostics.append({'country':name,'error':'Missing category/range coverage','category':category,'pools':[len(p) for p in pools]})
@@ -241,12 +259,9 @@ for ci in country_order:
         continue
     combos=[]
     for combo in itertools.product(*pools):
-        overlap=set.intersection(*(c['range']['countries'] for c in combo))
-        if overlap=={ci}:
-            # Prefer several informative clues and local evidence. Models may
-            # still have redundant clues; curators see the support sets.
-            endemic=sum(len(x['range']['countries'])==1 for x in combo)
-            score=(abs(endemic-2),-sum(math.log(1+x['localCount']) for x in combo))
+        supports = [clue['range']['countries'] for clue in combo]
+        if set.intersection(*supports)=={ci}:
+            score = (*combination_preference(supports), -sum(math.log1p(x['localCount']) for x in combo))
             combos.append((score,combo))
     combos.sort(key=lambda c:c[0]);used=[tuple(c['taxonId'] for c in p['clues']) for p in bank if p['countryId']==country['id']];made=0;obs_cache={}
     pool_ids = [set(x['taxon']['id'] for x in pool) for pool in pools]
@@ -271,16 +286,6 @@ for ci in country_order:
             if any(ids <= unavailable for ids in pool_ids):
                 break
             continue
-        # Final exact-boundary uniqueness check is separate from the upstream
-        # country-first source restriction. Reject, never silently weaken it.
-        exact=set(range(len(countries)))
-        for index,x in enumerate(combo):
-            r=x['range']
-            if 'exactCountries' not in r:r['exactCountries']={int(i) for i in exact_tree.query(r['shape'],predicate='intersects') if area(r['shape'].intersection(geometries[int(i)]))>.01}
-            present=r['exactCountries']
-            clues[index]['supportedCountries']=sorted(countries[i]['id'] for i in present)
-            exact.intersection_update(present)
-        if exact!={ci}:continue
         puzzle={'id':country['id'].lower()+'-'+hashlib.sha256(','.join(map(str,ids)).encode()).hexdigest()[:8],
             'countryId':country['id'],'country':name,'continent':country['continent'],'placeId':place['id'],'clues':clues,'matchingCountries':[country['id']],
             'selectionQueries':queries,'uniqueness':'unique-in-modeled-country-index'}

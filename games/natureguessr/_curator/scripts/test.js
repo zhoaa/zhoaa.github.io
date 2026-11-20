@@ -93,6 +93,12 @@ for (const [roll, continents] of [[0,2],[.199,2],[.2,3],[.999,3]]) {
   const drawn = drawFrom(mixed, roll);
   assert.equal(L.continentCount(drawn.plan.schedule['2026-12-31'].map(countryId=>({countryId}))),continents);
 }
+const rangeClues = groups => groups.map(supportedCountries => ({supportedCountries}));
+const fiveNeeded = ['a','b','c','d','e'].map(excluded =>
+  ['target','a','b','c','d','e'].filter(country=>country!==excluded));
+assert.deepEqual(L.rangePreference(rangeClues(fiveNeeded)),[0,-5,-5,-25]);
+assert.deepEqual(L.rangePreference(rangeClues([['target'],...fiveNeeded.slice(1)])),[1,-1,-1,-21]);
+assert.deepEqual(L.rangePreference(rangeClues([['target','a'],['target','b'],...fiveNeeded.slice(2)])),[0,-2,-2,-19]);
 assert.equal(L.roundScore(D.puzzles[0],[D.puzzles[0].countryId]),5000);
 assert.equal(L.roundScore(D.puzzles[0],['USA',D.puzzles[0].countryId]),4000);
 assert.equal(L.roundScore(D.puzzles[0],['USA']),0);

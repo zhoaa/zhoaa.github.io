@@ -107,6 +107,20 @@
     next.queue = next.queue.filter(id => !selected.has(id));
     return { plan: next, games };
   }
+  function rangePreference(clues) {
+    const supports = clues.map(clue => new Set(clue.supportedCountries));
+    const widths = supports.map(countries => countries.size);
+    let required = supports.length;
+    for (let mask = 1; mask < (1 << supports.length) - 1; mask++) {
+      const subset = supports.filter((_, index) => mask & (1 << index));
+      if (subset.length >= required) continue;
+      const common = [...subset[0]].filter(id => subset.every(countries => countries.has(id)));
+      if (common.length === 1) required = subset.length;
+    }
+    return [widths.filter(width => width === 1).length, -required, -Math.min(...widths),
+      -widths.reduce((total, width) => total + width, 0)];
+  }
+
   function roundScore(puzzle, guesses) { return guesses.length && guesses[guesses.length-1]===puzzle.countryId ? Math.max(0,6000-1000*guesses.length) : 0; }
   function proximityScore(guesses, feedback) {
     if (guesses.length < 5) return 0;
@@ -123,5 +137,5 @@
       return 0;
     }));
   }
-  return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,schedulePile,continentCount,roundScore,proximityScore};
+  return {normalize,distanceBands,distanceBand,direction,today,addDays,validDate,emptyPlan,validatePlan,schedulePile,continentCount,rangePreference,roundScore,proximityScore};
 });
