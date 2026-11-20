@@ -318,9 +318,19 @@
     const result = $('set-result');
     result.classList.toggle('set-won', won);
     result.classList.toggle('set-lost', !won);
+    const feedback = D.feedback[puzzle.countryId];
+    const tones = new Set(guesses.map(id => L.distanceBand(feedback[id], id === puzzle.countryId).tone));
+    const missMessages = [
+      ['borders', 'So close!'],
+      ['very-close', 'Almost!'],
+      ['close', 'Getting there...'],
+    ];
+    const missMessage = missMessages.find(([tone]) => tones.has(tone))?.[1] || 'Not quite!';
+    const winMessage = guesses.length === 5 ? 'Phew! You got it!' : 'You got it!';
+    const message = won ? winMessage : missMessage;
     result.innerHTML = `<div class="set-result-heading">
       <div>
-        <p class="eyebrow">${won?'Correct':'Correct country'}</p>
+        <p class="eyebrow">${message}</p>
         <h2>${esc(puzzle.country)}</h2>
       </div>
       <div class="review-actions">${game.mode==='playtest'
