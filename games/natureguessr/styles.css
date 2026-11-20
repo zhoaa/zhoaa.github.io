@@ -444,3 +444,9 @@ main:has(.game-results:not([hidden])) .game-topline {
   object-fit: cover;
 }
 .observation-map-preview span { display: block; padding: .25rem .15rem 0; }
+
+.selection-count {
+  display: block;
+  color: var(--muted);
+  font-size: .75rem;
+}
