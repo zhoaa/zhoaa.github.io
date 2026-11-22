@@ -11,6 +11,17 @@
     }
     return;
   }
+  // Upgrade older uploaded editions as well as newly generated games.
+  for (const puzzle of D.puzzles) {
+    for (const clue of puzzle.clues) {
+      const photo = clue.observation.photo;
+      const url = new URL(photo.url);
+      if (url.hostname === 'inaturalist-open-data.s3.amazonaws.com' || url.hostname === 'static.inaturalist.org') {
+        url.pathname = url.pathname.replace(/\/(square|small|medium)\./, '/large.');
+        photo.url = url.href;
+      }
+    }
+  }
   const puzzles=new Map(D.puzzles.map(p=>[p.id,p])),countries=new Map(D.countries.map(c=>[c.id,c]));
   const qa=new URLSearchParams(location.search).has('qa');
   // Set this to your GoatCounter dashboard origin to enable the two counters.

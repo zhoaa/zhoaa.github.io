@@ -158,7 +158,7 @@ def observation(taxon,base,ci):
             if photo.get('license_code') not in ALLOWED or photo.get('hidden') or photo.get('flags'):continue
             return {'id':o['id'],'url':o['uri'],'observer':o['user']['login'],'observerName':o['user'].get('name') or o['user']['login'],
                 'location':[lon,lat],'date':o.get('observed_on'),'license':o['license_code'],'placeId':base['place_id'],'query':url,'deadExcluded':animal,
-                'photo':{'id':photo['id'],'url':photo['url'].replace('/square.','/medium.'),'license':photo['license_code'],'attribution':photo['attribution'],
+                'photo':{'id':photo['id'],'url':photo['url'].replace('/square.','/large.'),'license':photo['license_code'],'attribution':photo['attribution'],
                     'source':f"https://www.inaturalist.org/photos/{photo['id']}"}}
     return None
 
