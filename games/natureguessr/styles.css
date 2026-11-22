@@ -127,7 +127,7 @@ dialog.photo-dialog {
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   background:
     linear-gradient(90deg, #ffffff32 50%, transparent 50%),
-    linear-gradient(#1f5c47 50%, #9bb4a5 50%);
+    linear-gradient(#d52b36 50%, #9bb4a5 50%);
 }
 .compass-needle::after {
   position: absolute;
